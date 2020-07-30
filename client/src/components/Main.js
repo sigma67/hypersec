@@ -13,6 +13,7 @@ import TransactionsView from './View/TransactionsView';
 import ChaincodeView from './View/ChaincodeView';
 import DashboardView from './View/DashboardView';
 import ChannelsView from './View/ChannelsView';
+import SecurityView from './View/SecurityView';
 import { chartSelectors } from '../state/redux/charts';
 import { tableOperations, tableSelectors } from '../state/redux/tables';
 import {
@@ -26,7 +27,8 @@ import {
 	peerStatusType,
 	transactionType,
 	transactionByOrgType,
-	transactionListType
+	transactionListType,
+	interblockTimeType
 } from './types';
 import PageNotFound from './View/PageNotFound';
 
@@ -38,7 +40,8 @@ const {
 	channelListSelector,
 	dashStatsSelector,
 	peerStatusSelector,
-	transactionByOrgSelector
+	transactionByOrgSelector,
+	interblockTimeSelector
 } = chartSelectors;
 
 const {
@@ -122,6 +125,12 @@ export const Main = props => {
 		getTransactionListSearch
 	};
 
+	const securityViewProps = {
+		blockList,
+		peerStatus,
+		blockActivity
+	};
+
 	return (
 		<Router>
 			<div className={classes.main}>
@@ -168,6 +177,13 @@ export const Main = props => {
 							<TransactionsView {...{ ...transactionsViewProps, ...routeprops }} />
 						)}
 					/>
+					<Private
+						exact
+						path="/security"
+						render={routeprops => (
+							<SecurityView {...{ ...securityViewProps, ...routeprops }} />
+						)}
+					/>
 					<Route exact render={routeprops => <PageNotFound {...routeprops} />} />
 				</Switch>
 			</div>
@@ -186,7 +202,8 @@ Main.propTypes = {
 	peerStatus: peerStatusType.isRequired,
 	transaction: transactionType.isRequired,
 	transactionByOrg: transactionByOrgType.isRequired,
-	transactionList: transactionListType.isRequired
+	transactionList: transactionListType.isRequired,
+	interblockTime: interblockTimeType.isRequired
 };
 
 export default compose(
@@ -206,7 +223,8 @@ export default compose(
 			transactionList: transactionListSelector(state),
 			blockListSearch: blockListSearchSelector(state),
 			transactionListSearch: transactionListSearchSelector(state),
-			blockActivity: blockActivitySelector(state)
+			blockActivity: blockActivitySelector(state),
+			interblockTime: interblockTimeSelector(state)
 		}),
 		{
 			getTransaction: tableOperations.transaction,

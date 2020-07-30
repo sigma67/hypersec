@@ -81,7 +81,7 @@ const styles = theme => {
 	};
 	return {
 		logo: {
-			width: 260,
+			width: 190,
 			height: 50,
 			'@media (max-width: 1415px) and (min-width: 990px)': {
 				width: 200,
@@ -487,7 +487,8 @@ export class HeaderView extends Component {
 			{ to: '/blocks', label: 'BLOCKS' },
 			{ to: '/transactions', label: 'TRANSACTIONS' },
 			{ to: '/chaincodes', label: 'CHAINCODES' },
-			{ to: '/channels', label: 'CHANNELS' }
+			{ to: '/channels', label: 'CHANNELS' },
+			{ to: '/security', label: 'SECURITY' }
 		];
 
 		return (

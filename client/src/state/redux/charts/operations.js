@@ -231,12 +231,52 @@ const transactionPerMin = channel => dispatch =>
 			console.error(error);
 		});
 
+const transactionSize = channel => dispatch =>
+	get(`/api/txSize/${channel}/1`)
+		.then(resp => {
+			if (resp.status === 500) {
+				dispatch(
+					actions.getErroMessage(
+						'500 Internal Server Error: The server has encountered an internal error and unable to complete your request'
+					)
+				);
+			} else if (resp.status === 400) {
+				dispatch(actions.getErroMessage(resp.error));
+			} else {
+				dispatch(actions.getTransactionSize(resp));
+			}
+		})
+		.catch(error => {
+			console.error(error);
+		});
+
+const interblockTime = channel => dispatch =>
+	get(`/api/interblockTime/${channel}/1`)
+		.then(resp => {
+			if (resp.status === 500) {
+				dispatch(
+					actions.getErroMessage(
+						'500 Internal Server Error: The server has encountered an internal error and unable to complete your request'
+					)
+				);
+			} else if (resp.status === 400) {
+				dispatch(actions.getErroMessage(resp.error));
+			} else {
+				dispatch(actions.getInterblockTime(resp));
+			}
+		})
+		.catch(error => {
+			console.error(error);
+		});
+
 export default {
 	blockPerHour,
 	blockPerMin,
 	transactionPerHour,
 	transactionPerMin,
 	transactionByOrg,
+	transactionSize,
+	interblockTime,
 	notification,
 	dashStats,
 	channel,

@@ -25,7 +25,8 @@ import {
 	getTransactionByOrgType,
 	getTransactionListType,
 	getTransactionPerHourType,
-	getTransactionPerMinType
+	getTransactionPerMinType,
+	getInterblockTimeType
 } from '../types';
 
 const {
@@ -38,7 +39,8 @@ const {
 	peerStatus,
 	transactionByOrg,
 	transactionPerHour,
-	transactionPerMin
+	transactionPerMin,
+	interblockTime
 } = chartOperations;
 
 const {
@@ -116,6 +118,7 @@ export class LandingPage extends Component {
 			getTransactionList,
 			getTransactionPerHour,
 			getTransactionPerMin,
+			getInterblockTime,
 			updateLoadStatus
 		} = this.props;
 		await getChannel();
@@ -139,7 +142,8 @@ export class LandingPage extends Component {
 			getTransactionByOrg(currentChannel),
 			getTransactionList(currentChannel),
 			getTransactionPerHour(currentChannel),
-			getTransactionPerMin(currentChannel)
+			getTransactionPerMin(currentChannel),
+			getInterblockTime(currentChannel)
 		]);
 		clearTimeout(promiseTimeout);
 		updateLoadStatus();
@@ -201,7 +205,8 @@ LandingPage.propTypes = {
 	getTransactionByOrg: getTransactionByOrgType.isRequired,
 	getTransactionList: getTransactionListType.isRequired,
 	getTransactionPerHour: getTransactionPerHourType.isRequired,
-	getTransactionPerMin: getTransactionPerMinType.isRequired
+	getTransactionPerMin: getTransactionPerMinType.isRequired,
+	getInterblockTime: getInterblockTimeType.isRequired
 };
 
 LandingPage.defaultProps = {
@@ -229,7 +234,8 @@ export default compose(
 			getTransactionByOrg: transactionByOrg,
 			getTransactionList: transactionList,
 			getTransactionPerHour: transactionPerHour,
-			getTransactionPerMin: transactionPerMin
+			getTransactionPerMin: transactionPerMin,
+			getInterblockTime: interblockTime
 		}
 	)
 )(LandingPage);
