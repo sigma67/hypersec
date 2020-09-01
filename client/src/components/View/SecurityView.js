@@ -5,9 +5,8 @@
 import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import { Row, Col } from 'reactstrap';
-import { Button, List, Icon } from 'semantic-ui-react';
+//import { Button, List, Icon } from 'semantic-ui-react';
 //import FontAwesome from 'react-fontawesome';
-import Card from '@material-ui/core/Card';
 //import Icon from '@material-ui/icons';
 import BlockChart from '../Charts/BlockChart';
 import PeersHealth from '../Lists/PeersHealth';
@@ -16,8 +15,8 @@ import PeersHealth from '../Lists/PeersHealth';
 import TransactionChart from '../Charts/TransactionChart';
 //import SumUpButtons from '../Forms/SumUpButtons';
 import Map from '../Charts/Map';
-
 import { blockListType, peerStatusType } from '../types';
+import { CardContent, Card, CardHeader } from '@material-ui/core';
 
 /* istanbul ignore next */
 const styles = theme => {
@@ -87,7 +86,7 @@ const styles = theme => {
 			backgroundColor: dark ? 'rgb(252, 224, 174)' : '#ffeed8'
 		},
 		section: {
-			height: 335,
+			height: 500,
 			marginBottom: '2%',
 			color: dark ? '#ffffff' : undefined,
 			backgroundColor: dark ? '#3c3558' : undefined
@@ -106,7 +105,7 @@ export class SecurityView extends Component {
 		return (
 			<div className={classes.background}>
 				<div className={classes.view}>
-					<Row>
+					{/* <Row>
 						<Card>
 							<Col sm="9">
 								<Row>
@@ -147,40 +146,40 @@ export class SecurityView extends Component {
 								</Row>
 							</Col>
 						</Card>
+					</Row> */}
+					<Row>
+						<Col sm="6">
+							<Card className={`${classes.section}`} variant="outlined">
+								<CardHeader title="Blockchain Progress" subheader="Test Subheader" />
+								<CardContent>
+									<BlockChart />
+								</CardContent>
+							</Card>
+						</Col>
+						<Col sm="6">
+							<Card className={`${classes.section}`} variant="outlined">
+								<CardHeader title="Transaction Log" />
+								<CardContent>
+									<TransactionChart />
+								</CardContent>
+							</Card>
+						</Col>
 					</Row>
 					<Row>
 						<Col sm="6">
-							<Row>
-								<h4>Network</h4>
-							</Row>
-							<Row>
-								<Card className={classes.section}>
+							<Card className={`${classes.section}`} variant="outlined">
+								<CardHeader title="Network" />
+								<CardContent>
 									<PeersHealth peerStatus={peerStatus} />
-								</Card>
-							</Row>
-							<Row>
-								<Card>
-									<Map />
-								</Card>
-							</Row>
-							<Row>
-								<Card>
-									<h4>Map</h4>
-								</Card>
-							</Row>
+								</CardContent>
+							</Card>
 						</Col>
 						<Col sm="6">
-							<Row>
-								<h4>Blockchain Progress</h4>
-							</Row>
-							<Row>
-								<Card className={classes.section}>
-									<BlockChart />
-								</Card>
-							</Row>
-							<h4>Transaction Log</h4>
-							<Card className={classes.section}>
-								<TransactionChart />
+							<Card className={`${classes.section}`} variant="outlined">
+								<CardHeader title="Map" />
+								<CardContent>
+									<Map />
+								</CardContent>
 							</Card>
 						</Col>
 					</Row>

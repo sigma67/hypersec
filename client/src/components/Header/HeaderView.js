@@ -464,7 +464,9 @@ export class HeaderView extends Component {
 
 	render() {
 		const { mode, classes } = this.props;
-		const { hostname, port } = window.location;
+		// const { hostname, port } = window.location;
+		const hostname = '192.168.178.41';
+		const port = '8080';
 		const webSocketProtocol =
 			window.location.protocol === 'https:' ? 'wss' : 'ws';
 		const webSocketUrl = `${webSocketProtocol}://${hostname}:${port}/`;
@@ -544,13 +546,14 @@ export class HeaderView extends Component {
 									</div>
 									{
 										<div className={classes.adminButton}>
-											<FontAwesome
-												name="bell"
-												data-command="bell"
-												className={classes.bell}
-												onClick={() => this.handleDrawOpen('notifyDrawer')}
-											/>
-											<Badge badgeContent={notifyCount} color="primary" />
+											<Badge badgeContent={notifyCount} color="primary">
+												<FontAwesome
+													name="bell"
+													data-command="bell"
+													className={classes.bell}
+													onClick={() => this.handleDrawOpen('notifyDrawer')}
+												/>
+											</Badge>
 										</div>
 									}
 									{/*

@@ -1,7 +1,7 @@
 {
 	"sslEnabled": false,
 	"sslCertsPath": "ssl-certs",
-	"host": "localhost",
+	"host": "http://192.168.178.41/",
 	"port": "8080",
 	"license": "Apache-2.0"
 }
