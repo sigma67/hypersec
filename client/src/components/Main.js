@@ -13,6 +13,7 @@ import TransactionsView from './View/TransactionsView';
 import ChaincodeView from './View/ChaincodeView';
 import DashboardView from './View/DashboardView';
 import ChannelsView from './View/ChannelsView';
+import SecurityView from './View/SecurityView';
 import { chartSelectors } from '../state/redux/charts';
 import { tableOperations, tableSelectors } from '../state/redux/tables';
 import {
@@ -122,6 +123,8 @@ export const Main = props => {
 		getTransactionListSearch
 	};
 
+	const securityViewProps = {};
+
 	return (
 		<Router>
 			<div className={classes.main}>
@@ -166,6 +169,13 @@ export const Main = props => {
 						path="/transactions"
 						render={routeprops => (
 							<TransactionsView {...{ ...transactionsViewProps, ...routeprops }} />
+						)}
+					/>
+					<Private
+						exact
+						path="/security"
+						render={routeprops => (
+							<SecurityView {...{ ...securityViewProps, ...routeprops }} />
 						)}
 					/>
 					<Route exact render={routeprops => <PageNotFound {...routeprops} />} />
