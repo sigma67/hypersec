@@ -81,7 +81,7 @@ const styles = theme => {
 	};
 	return {
 		logo: {
-			width: 260,
+			width: 190,
 			height: 50,
 			'@media (max-width: 1415px) and (min-width: 990px)': {
 				width: 200,
@@ -464,7 +464,9 @@ export class HeaderView extends Component {
 
 	render() {
 		const { mode, classes } = this.props;
-		const { hostname, port } = window.location;
+		// const { hostname, port } = window.location;
+		const hostname = '192.168.178.44';
+		const port = '8080';
 		const webSocketProtocol =
 			window.location.protocol === 'https:' ? 'wss' : 'ws';
 		const webSocketUrl = `${webSocketProtocol}://${hostname}:${port}/`;
@@ -487,7 +489,8 @@ export class HeaderView extends Component {
 			{ to: '/blocks', label: 'BLOCKS' },
 			{ to: '/transactions', label: 'TRANSACTIONS' },
 			{ to: '/chaincodes', label: 'CHAINCODES' },
-			{ to: '/channels', label: 'CHANNELS' }
+			{ to: '/channels', label: 'CHANNELS' },
+			{ to: '/security', label: 'SECURITY' }
 		];
 
 		return (
