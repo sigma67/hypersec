@@ -16,6 +16,7 @@
 		"immutable": "^3.8.1",
 		"jquery": "^3.5.0",
 		"js-beautify": "^1.7.5",
+		"js-sha256": "^0.9.0",
 		"lodash": "^4.17.19",
 		"match-sorter": "^2.2.1",
 		"moment": "^2.22.2",
@@ -63,7 +64,7 @@
 		"eject": "react-scripts eject",
 		"lint": "eslint"
 	},
-	"proxy": "http://192.168.178.44:8080/",
+	"proxy": "http://132.199.120.248:8080/",
 	"devDependencies": {
 		"@wdio/cli": "^5.10.4",
 		"@wdio/dot-reporter": "^5.9.3",
