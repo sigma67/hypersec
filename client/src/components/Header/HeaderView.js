@@ -28,6 +28,7 @@ import { themeSelectors } from '../../state/redux/theme';
 import { authOperations } from '../../state/redux/auth';
 
 import Register from '../Register';
+import config from '../../../package.json'
 
 // import Enroll from '../Enroll';
 
@@ -465,11 +466,10 @@ export class HeaderView extends Component {
 	render() {
 		const { mode, classes } = this.props;
 		// const { hostname, port } = window.location;
-		const hostname = '192.168.178.44';
-		const port = '8080';
+		let proxy = new URL(config.proxy)
 		const webSocketProtocol =
-			window.location.protocol === 'https:' ? 'wss' : 'ws';
-		const webSocketUrl = `${webSocketProtocol}://${hostname}:${port}/`;
+			proxy.protocol === 'https:' ? 'wss' : 'ws';
+		const webSocketUrl = `${webSocketProtocol}://${proxy.hostname}:${proxy.port}/`;
 		const dark = mode === 'dark';
 		const {
 			isLoading,
