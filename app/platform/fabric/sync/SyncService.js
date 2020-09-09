@@ -502,6 +502,7 @@ class SyncServices {
 			const txLen = block.data.data.length;
 			for (let i = 0; i < txLen; i++) {
 				const txObj = block.data.data[i];
+				const size = Buffer.byteLength(JSON.stringify(txObj));
 				const txid = txObj.payload.header.channel_header.tx_id;
 				let validation_code = '';
 				let endorser_signature = '';
@@ -646,7 +647,8 @@ class SyncServices {
 					endorser_signature,
 					creator_id_bytes,
 					payload_proposal_hash,
-					endorser_id_bytes
+					endorser_id_bytes,
+					size
 				};
 
 				// Insert transaction

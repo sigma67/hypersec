@@ -178,7 +178,8 @@ CREATE TABLE transactions
   payload_proposal_hash character varying DEFAULT NULL,
   endorser_id_bytes character varying DEFAULT NULL,
   endorser_signature character varying DEFAULT NULL,
-  network_name varchar(255)
+  network_name varchar(255),
+  size integer default NULL
 );
 
 ALTER table transactions owner to :user;
