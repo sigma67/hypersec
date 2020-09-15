@@ -40,7 +40,7 @@ class CRUDService {
 	 * @memberof CRUDService
 	 */
 	getTransactionByID(network_name, channel_genesis_hash, txhash) {
-		const sqlTxById = ` select t.txhash,t.validation_code,t.payload_proposal_hash,t.creator_msp_id,t.endorser_msp_id,t.chaincodename,t.type,t.createdt,t.read_set,
+		const sqlTxById = ` select t.blockid, t.txhash,t.validation_code,t.payload_proposal_hash,t.creator_msp_id,t.endorser_msp_id,t.chaincodename,t.type,t.createdt,t.read_set,
 				t.write_set,channel.name as channelName from TRANSACTIONS as t inner join channel on t.channel_genesis_hash=channel.channel_genesis_hash and t.network_name=channel.network_name
 				where t.txhash = '${txhash}' and t.network_name = '${network_name}' `;
 		return this.sql.getRowByPkOne(sqlTxById);

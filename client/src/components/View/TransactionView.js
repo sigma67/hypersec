@@ -126,6 +126,10 @@ export class TransactionView extends Component {
 									<Table striped hover responsive className="table-striped">
 										<tbody>
 											<tr>
+												<th>Block ID:</th>
+												<td>{transaction.blockid}</td>
+											</tr>
+											<tr>
 												<th>Transaction ID:</th>
 												<td>
 													{transaction.txhash}
