@@ -1,34 +1,30 @@
+/* eslint-disable */
 import React, { useRef, useEffect } from 'react';
 import { select, range, max } from 'd3';
 import { scaleOrdinal, scaleBand, scaleLinear } from 'd3-scale';
 import { schemePastel2, schemeDark2 } from 'd3-scale-chromatic';
 import { axisBottom, axisLeft } from 'd3-axis';
 import { stack, stackOrderNone, stackOffsetNone } from 'd3-shape';
+import useResizeObserver from '../useResizeObserver';
 
 function ProcessingTimeChart({
 	data,
-	resizeObserver,
+	avgProcessingTime,
 	hoveredTransaction,
 	onTransactionHovered
 }) {
 	const svgRef = useRef();
 	const wrapperRef = useRef();
-	const dimensions = resizeObserver(wrapperRef);
+	const dimensions = useResizeObserver(wrapperRef);
 	const selfHover = useRef(false);
 	const hoveredKey = useRef(null);
 	const keys = ['validation', 'ordering', 'endorsement'];
 
 	useEffect(() => {
-		let avg = [0];
-		data.forEach(
-			d => (avg[0] = avg[0] + (d.validation + d.ordering + d.endorsement))
-		);
-		avg[0] = avg[0] / data.length;
-
 		if (!dimensions) return;
 
-		const marginBar = { top: 30, right: 0, bottom: 30, left: 40 };
-		const legendWidth = dimensions.width / keys.length;
+		const marginBar = { top: 20, right: 0, bottom: 30, left: 40 };
+		const legendWidth = dimensions.width / keys.length - 20;
 		const colorScale = scaleOrdinal()
 			.domain(keys)
 			.range(schemePastel2);
@@ -51,7 +47,11 @@ function ProcessingTimeChart({
 			.call(xAxis);
 
 		const yScale = scaleLinear()
-			.domain([0, max(data, d => d.validation + d.ordering + d.endorsement)])
+			.domain([
+				0,
+				max(data, d => d.validation + d.ordering + d.endorsement) ||
+					avgProcessingTime
+			])
 			.nice()
 			.range([dimensions.height - marginBar.bottom, marginBar.top]);
 
@@ -96,7 +96,9 @@ function ProcessingTimeChart({
 			.attr('fill', function(e) {
 				const key = select(this.parentNode).datum().key;
 				if (!selfHover.current) {
-					return e.data === hoveredTransaction ? hoverScale(key) : colorScale(key);
+					return e.data === hoveredTransaction
+						? hoverScale(key)
+						: colorScale(key);
 				}
 			})
 			.on('mouseenter', function(event, value) {
@@ -112,9 +114,8 @@ function ProcessingTimeChart({
 							hoveredKey.current === select(this.parentNode).datum().key
 						) {
 							return hoverScale(hoveredKey.current);
-						} else {
-							return colorScale(select(this.parentNode).datum().key);
 						}
+						return colorScale(select(this.parentNode).datum().key);
 					});
 			})
 			.on('mouseleave', () => {
@@ -154,13 +155,13 @@ function ProcessingTimeChart({
 		svg
 			.select('.trendline')
 			.selectAll('.avg-line')
-			.data(avg)
+			.data(avgProcessingTime)
 			.join('line')
 			.attr('class', 'avg-line')
 			.attr('x1', xScale(0))
 			.attr('x2', dimensions.width - marginBar.right)
-			.attr('y1', yScale(avg[0]))
-			.attr('y2', yScale(avg[0]))
+			.attr('y1', yScale(avgProcessingTime[0]))
+			.attr('y2', yScale(avgProcessingTime[0]))
 			.attr('stroke', 'currentcolor')
 			.attr('stroke-dasharray', 3)
 			.attr('stroke-width', 2)
@@ -169,15 +170,16 @@ function ProcessingTimeChart({
 		svg
 			.select('.trendline')
 			.selectAll('.trend-text')
-			.data(avg)
+			.data(avgProcessingTime)
 			.join('text')
 			.attr('class', 'trend-text')
 			.attr('x', dimensions.width / 2 - 25)
-			.attr('y', yScale(avg[0]) - 5)
+			.attr('y', yScale(avgProcessingTime[0]) - 5)
 			.attr('fill', 'currentcolor')
-			.text('24h: ' + avg[0].toFixed(2))
+			.text('24h: ' + avgProcessingTime[0].toFixed(2))
 			.style('font-size', '11px');
 
+		if (data.length < 1) return;
 		svg
 			.selectAll('.tooltip-text')
 			.data(data)
@@ -196,6 +198,7 @@ function ProcessingTimeChart({
 			);
 	}, [
 		data,
+		avgProcessingTime,
 		dimensions,
 		keys,
 		hoveredTransaction,

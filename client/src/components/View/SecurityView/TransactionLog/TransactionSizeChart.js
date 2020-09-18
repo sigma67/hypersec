@@ -1,29 +1,27 @@
+/* eslint-disable */
 import React, { useRef, useEffect } from 'react';
 import { select, range, max } from 'd3';
 import { scaleOrdinal, scaleBand, scaleLinear } from 'd3-scale';
 import { schemePastel1, schemeSet1 } from 'd3-scale-chromatic';
 import { axisBottom, axisLeft } from 'd3-axis';
+import useResizeObserver from '../useResizeObserver';
 
 function TransactionSizeChart({
 	data,
-	resizeObserver,
+	avgTransactionSize,
 	hoveredTransaction,
 	onTransactionHovered
 }) {
 	const svgRef = useRef();
 	const wrapperRef = useRef();
-	const dimensions = resizeObserver(wrapperRef);
+	const dimensions = useResizeObserver(wrapperRef);
 	const keys = ['invalid', 'pending', 'valid'];
 
 	useEffect(() => {
-		let avg = [0];
-		data.forEach(d => (avg[0] = avg[0] + d.uv));
-		avg[0] = avg[0] / data.length;
-
 		if (!dimensions) return;
 
-		const marginBar = { top: 30, right: 0, bottom: 30, left: 40 };
-		const legendWidth = dimensions.width / keys.length;
+		const marginBar = { top: 20, right: 0, bottom: 30, left: 40 };
+		const legendWidth = dimensions.width / keys.length - 20;
 		const colorScale = scaleOrdinal()
 			.domain(keys)
 			.range(schemePastel1);
@@ -34,9 +32,8 @@ function TransactionSizeChart({
 			const scale = hover ? hoverScale : colorScale;
 			if (element.finished) {
 				return element.valid ? scale('valid') : scale('invalid');
-			} else {
-				return scale('pending');
 			}
+			return scale('pending');
 		};
 
 		const svg = select(svgRef.current);
@@ -54,7 +51,7 @@ function TransactionSizeChart({
 			.call(xAxis);
 
 		const yScale = scaleLinear()
-			.domain([0, max(data, d => d.uv)])
+			.domain([0, max(data, d => d.uv) || avgTransactionSize])
 			.nice()
 			.range([dimensions.height - marginBar.bottom, marginBar.top]);
 
@@ -122,13 +119,13 @@ function TransactionSizeChart({
 		svg
 			.select('.trendline')
 			.selectAll('.avg-line')
-			.data(avg)
+			.data(avgTransactionSize)
 			.join('line')
 			.attr('class', 'avg-line')
 			.attr('x1', xScale(0))
 			.attr('x2', dimensions.width - marginBar.right)
-			.attr('y1', yScale(avg[0]))
-			.attr('y2', yScale(avg[0]))
+			.attr('y1', yScale(avgTransactionSize[0]))
+			.attr('y2', yScale(avgTransactionSize[0]))
 			.attr('stroke', 'currentcolor')
 			.attr('stroke-dasharray', 3)
 			.attr('stroke-width', 2)
@@ -137,28 +134,39 @@ function TransactionSizeChart({
 		svg
 			.select('.trendline')
 			.selectAll('.trend-text')
-			.data(avg)
+			.data(avgTransactionSize)
 			.join('text')
 			.attr('class', 'trend-text')
 			.attr('x', dimensions.width / 2 - 25)
-			.attr('y', yScale(avg[0]) - 5)
+			.attr('y', yScale(avgTransactionSize[0]) - 5)
 			.attr('fill', 'currentcolor')
-			.text('24h: ' + avg[0].toFixed(2))
+			.text('24h: ' + avgTransactionSize[0].toFixed(2))
 			.style('font-size', '11px');
 
+		if (data.length < 1) return;
 		svg
 			.selectAll('.tooltip-text')
 			.data(data)
 			.join('text')
 			.attr('class', 'tooltip-text')
 			.attr('fill', 'currentcolor')
-			.attr('x', element => xScale(data.indexOf(element)) + xScale.bandwidth() / 2)
+			.attr(
+				'x',
+				element => xScale(data.indexOf(element)) + xScale.bandwidth() / 2
+			)
 			.attr('y', yScale(0) + 12)
 			.attr('opacity', element => (element === hoveredTransaction ? 1 : 0))
 			.style('font-size', '11px')
 			.style('text-anchor', 'middle')
 			.text(element => element.uv);
-	}, [data, dimensions, keys, hoveredTransaction, onTransactionHovered]);
+	}, [
+		data,
+		avgTransactionSize,
+		dimensions,
+		keys,
+		hoveredTransaction,
+		onTransactionHovered
+	]);
 
 	return (
 		<React.Fragment>

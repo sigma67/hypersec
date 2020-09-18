@@ -1,9 +1,10 @@
+/* eslint-disable */
 import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import { Row, Col } from 'reactstrap';
 import { Card, CardHeader, CardContent } from '@material-ui/core';
 import Map from '../../Charts/Map';
-import TransactionLog from './TransactionLog';
+import TransactionLog from './TransactionLog/TransactionLog';
 
 const styles = theme => {
 	const { type } = theme.palette;
@@ -92,7 +93,7 @@ export class SecurityView extends Component {
 					<Row>
 						<Col sm="6">
 							<Card className={`${classes.section}`} variant="outlined">
-								<CardHeader title="Network" subheader="Peers Health"></CardHeader>
+								<CardHeader title="Network" subheader="Peers Health" />
 								<CardContent>PeersHealthComponent</CardContent>
 							</Card>
 						</Col>
@@ -106,7 +107,7 @@ export class SecurityView extends Component {
 					<Row>
 						<Col sm="6">
 							<Card className={`${classes.section}`} variant="outlined">
-								<CardHeader title="Map" subheader=""></CardHeader>
+								<CardHeader title="Map" subheader="" />
 								<CardContent>
 									<Map />
 								</CardContent>
@@ -117,7 +118,7 @@ export class SecurityView extends Component {
 								<CardHeader
 									title="Transaction Log"
 									subheader="TransactionSize and Processing Time"
-								></CardHeader>
+								/>
 								<TransactionLog />
 							</Card>
 						</Col>

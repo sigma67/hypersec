@@ -6,15 +6,14 @@ import React, { Component } from 'react';
 import compose from 'recompose/compose';
 import { withStyles } from '@material-ui/core/styles';
 import { connect } from 'react-redux';
-import ExpansionPanel, {
-	ExpansionPanelSummary,
-	ExpansionPanelDetails
-} from '@material-ui/core/ExpansionPanel';
+import ExpansionPanel from '@material-ui/core/ExpansionPanel';
+import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
+import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import Typography from '@material-ui/core/Typography';
 import FontAwesome from 'react-fontawesome';
-import { MenuItem } from '@material-ui/core/Menu';
-import { FormControl, FormHelperText } from '@material-ui/core/FormControl';
+import { MenuItem, FormControl, FormHelperText } from '@material-ui/core';
+
 import Select from '@material-ui/core/Select';
 import ChannelForm from '../Forms/ChannelForm';
 
@@ -129,9 +128,11 @@ function mapStateToProps(state, ownProps) {
 		channel: state.channel.channel
 	};
 }
-// function mapDispatchToProps(dispatch){
-//   return {actions: bindActionCreators({...partActions,...secActions}, dispatch)}
-// }
+/*
+ * function mapDispatchToProps(dispatch){
+ *   return {actions: bindActionCreators({...partActions,...secActions}, dispatch)}
+ * }
+ */
 
 /* istanbul ignore next */
 export default compose(
