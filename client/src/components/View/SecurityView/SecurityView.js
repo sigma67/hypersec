@@ -1,7 +1,10 @@
+/* eslint-disable */
 import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import { Row, Col } from 'reactstrap';
 import { Card, CardHeader, CardContent } from '@material-ui/core';
+import Map from '../../Charts/Map';
+import TransactionLog from './TransactionLog/TransactionLog';
 
 const styles = theme => {
 	const { type } = theme.palette;
@@ -70,7 +73,7 @@ const styles = theme => {
 			backgroundColor: dark ? 'rgb(252, 224, 174)' : '#ffeed8'
 		},
 		section: {
-			height: 335,
+			height: (0.8 * window.screen.availHeight) / 2,
 			marginBottom: '2%',
 			color: dark ? '#ffffff' : undefined,
 			backgroundColor: dark ? '#3c3558' : undefined
@@ -83,25 +86,20 @@ const styles = theme => {
 
 export class SecurityView extends Component {
 	render() {
-		const { peerStatus } = this.props;
 		const { classes } = this.props;
-		console.log(classes);
 		return (
 			<div className={classes.background}>
 				<div className={classes.view}>
 					<Row>
 						<Col sm="6">
 							<Card className={`${classes.section}`} variant="outlined">
-								<CardHeader title="Network" subheader="Peers Health"></CardHeader>
+								<CardHeader title="Network" subheader="Peers Health" />
 								<CardContent>PeersHealthComponent</CardContent>
 							</Card>
 						</Col>
 						<Col sm="6">
 							<Card className={`${classes.section}`} variant="outlined">
-								<CardHeader
-									title="Blockchain Progress"
-									subheader="Subheader"
-								></CardHeader>
+								<CardHeader title="Blockchain Progress" subheader="Subheader" />
 								<CardContent>BlockChart</CardContent>
 							</Card>
 						</Col>
@@ -109,14 +107,19 @@ export class SecurityView extends Component {
 					<Row>
 						<Col sm="6">
 							<Card className={`${classes.section}`} variant="outlined">
-								<CardHeader title="Map" subheader=""></CardHeader>
-								<CardContent>MapChart</CardContent>
+								<CardHeader title="Map" subheader="" />
+								<CardContent>
+									<Map />
+								</CardContent>
 							</Card>
 						</Col>
 						<Col sm="6">
 							<Card className={`${classes.section}`} variant="outlined">
-								<CardHeader title="Transaction Log" subheader="Subheader"></CardHeader>
-								<CardContent>TransactionChart</CardContent>
+								<CardHeader
+									title="Transaction Log"
+									subheader="TransactionSize and Processing Time"
+								/>
+								<TransactionLog />
 							</Card>
 						</Col>
 					</Row>
