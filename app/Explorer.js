@@ -16,6 +16,7 @@ const ExplorerError = require('./common/ExplorerError');
 const localLoginStrategy = require('./passport/local-login');
 const authroutes = require('./rest/authroutes');
 const dbroutes = require('./rest/dbroutes');
+const metricroutes = require('./rest/metricroutes');
 const platformroutes = require('./rest/platformroutes');
 const adminroutes = require('./platform/fabric/rest/adminroutes');
 
@@ -123,6 +124,7 @@ class Explorer {
 			const apirouter = new Express.Router();
 
 			// Initializing the rest app services
+			await metricroutes(apirouter, platform);
 			await dbroutes(apirouter, platform);
 			await platformroutes(apirouter, platform);
 			await adminroutes(apirouter, platform);

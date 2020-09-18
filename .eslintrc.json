@@ -310,6 +310,7 @@
 					"fx19800215",
 					"sqllite",
 					"Pv4",
+					"metricroutes",
 					"platformroutes",
 					"png",
 					"pem",
@@ -439,7 +440,8 @@
 					"userlist",
 					"unregister",
 					"userdataservice",
-					"parens"
+					"parens",
+					"prometheus"
 				],
 				"skipIfMatch": ["http://[^s]*", "[a-z]scc"],
 				"skipWordIfMatch": ["^foobar.*$"],
