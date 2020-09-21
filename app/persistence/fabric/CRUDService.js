@@ -41,7 +41,7 @@ class CRUDService {
 	 */
 	getTransactionByID(network_name, channel_genesis_hash, txhash) {
 		const sqlTxById = ` select t.blockid, t.txhash,t.validation_code,t.payload_proposal_hash,t.creator_msp_id,t.endorser_msp_id,t.chaincodename,t.type,t.createdt,t.read_set,
-				t.write_set,channel.name as channelName from TRANSACTIONS as t inner join channel on t.channel_genesis_hash=channel.channel_genesis_hash and t.network_name=channel.network_name
+				t.write_set,channel.name as channelName, t.size from TRANSACTIONS as t inner join channel on t.channel_genesis_hash=channel.channel_genesis_hash and t.network_name=channel.network_name
 				where t.txhash = '${txhash}' and t.network_name = '${network_name}' `;
 		return this.sql.getRowByPkOne(sqlTxById);
 	}
@@ -84,11 +84,11 @@ class CRUDService {
 
 		logger.debug('getTxList.byOrgs ', byOrgs);
 
-		const sqlTxListByOrgs = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName from transactions as t
+		const sqlTxListByOrgs = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName, t.size from transactions as t
        inner join channel on t.channel_genesis_hash=channel.channel_genesis_hash and t.network_name = channel.network_name where  t.blockid >= ${blockNum} and t.id >= ${txid} and t.creator_msp_id in (${orgs}) and
 							t.channel_genesis_hash = '${channel_genesis_hash}' and t.network_name = '${network_name}' and t.createdt between '${from}' and '${to}'  order by  t.id desc`;
 
-		const sqlTxList = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName from transactions as t
+		const sqlTxList = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName, t.size from transactions as t
        inner join channel on t.channel_genesis_hash=channel.channel_genesis_hash and t.network_name = channel.network_name where  t.blockid >= ${blockNum} and t.id >= ${txid} and
 							t.channel_genesis_hash = '${channel_genesis_hash}' and t.network_name = '${network_name}' and t.createdt between '${from}' and '${to}'  order by  t.id desc`;
 
