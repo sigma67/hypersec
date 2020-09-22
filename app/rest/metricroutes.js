@@ -29,9 +29,7 @@ const metricroutes = async function(router, platform) {
 				qs: req.query
 			},
 			(err, response, body) => {
-				console.log(response);
 				if (err) {
-					console.log(err);
 					return requtil.invalidRequest(req, res);
 				}
 				try {
