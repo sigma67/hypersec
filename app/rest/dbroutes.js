@@ -3,7 +3,7 @@
  */
 
 const requtil = require('./requestutils.js');
-const helper = require('./../common/helper');
+const helper = require('../common/helper');
 
 const logger = helper.getLogger('dbroutes');
 
@@ -21,7 +21,7 @@ const dbroutes = (router, platform) => {
 		const channel_genesis_hash = req.params.channel_genesis_hash;
 		if (channel_genesis_hash) {
 			dbStatusMetrics.getStatus(req.network, channel_genesis_hash, data => {
-				if (data && (data.chaincodeCount && data.txCount && data.peerCount)) {
+				if (data && data.chaincodeCount && data.txCount && data.peerCount) {
 					return res.send(data);
 				}
 				return requtil.notFound(req, res);
@@ -127,6 +127,7 @@ const dbroutes = (router, platform) => {
 			const blockNum = parseInt(req.params.blocknum);
 			let txid = parseInt(req.params.txid);
 			const orgs = requtil.orgsArrayToString(req.query);
+			const chaincode = req.query.chaincode;
 			const { from, to } = requtil.queryDatevalidator(
 				req.query.from,
 				req.query.to
@@ -143,7 +144,8 @@ const dbroutes = (router, platform) => {
 						txid,
 						from,
 						to,
-						orgs
+						orgs,
+						chaincode
 					)
 					.then(rows => {
 						if (rows) {

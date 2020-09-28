@@ -76,26 +76,31 @@ class CRUDService {
 	 * @returns
 	 * @memberof CRUDService
 	 */
-	getTxList(network_name, channel_genesis_hash, blockNum, txid, from, to, orgs) {
-		let byOrgs = false;
-		if (orgs && orgs !== '') {
-			byOrgs = true;
-		}
-
-		logger.debug('getTxList.byOrgs ', byOrgs);
-
-		const sqlTxListByOrgs = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName, t.size from transactions as t
-       inner join channel on t.channel_genesis_hash=channel.channel_genesis_hash and t.network_name = channel.network_name where  t.blockid >= ${blockNum} and t.id >= ${txid} and t.creator_msp_id in (${orgs}) and
-							t.channel_genesis_hash = '${channel_genesis_hash}' and t.network_name = '${network_name}' and t.createdt between '${from}' and '${to}'  order by  t.id desc`;
-
-		const sqlTxList = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName, t.size from transactions as t
+	getTxList(
+		network_name,
+		channel_genesis_hash,
+		blockNum,
+		txid,
+		from,
+		to,
+		orgs,
+		chaincode
+	) {
+		let sqlTxList = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName, t.size from transactions as t
        inner join channel on t.channel_genesis_hash=channel.channel_genesis_hash and t.network_name = channel.network_name where  t.blockid >= ${blockNum} and t.id >= ${txid} and
-							t.channel_genesis_hash = '${channel_genesis_hash}' and t.network_name = '${network_name}' and t.createdt between '${from}' and '${to}'  order by  t.id desc`;
+							t.channel_genesis_hash = '${channel_genesis_hash}' and t.network_name = '${network_name}' and t.createdt between '${from}' and '${to}' `;
 
-		if (byOrgs) {
-			return this.sql.getRowsBySQlQuery(sqlTxListByOrgs);
+		if (orgs && orgs !== '') {
+			sqlTxList += ` and t.creator_msp_id in (${orgs})`;
 		}
-		return this.sql.getRowsBySQlQuery(sqlTxList);
+
+		if (chaincode && chaincode !== '') {
+			sqlTxList += ` and t.chaincodename = '${chaincode}'`;
+		}
+
+		const orderBy = ' order by t.id desc';
+
+		return this.sql.getRowsBySQlQuery(sqlTxList + orderBy);
 	}
 
 	/**
