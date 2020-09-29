@@ -98,7 +98,7 @@ class CRUDService {
 			sqlTxList += ` and t.chaincodename = '${chaincode}'`;
 		}
 
-		const orderBy = ' order by t.id desc';
+		const orderBy = ' order by t.createdt desc';
 
 		return this.sql.getRowsBySQlQuery(sqlTxList + orderBy);
 	}
