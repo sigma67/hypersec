@@ -131,6 +131,7 @@
 		"require-await": ["off"],
 		"global-require": ["off"],
 		"class-methods-use-this": ["off"],
+		"no-empty": ["error", { "allowEmptyCatch": true }],
 		"no-empty-function": ["error"],
 		"object-curly-spacing": ["off"],
 		"no-useless-constructor": ["off"],
@@ -310,6 +311,8 @@
 					"fx19800215",
 					"sqllite",
 					"Pv4",
+					"metricroutes",
+					"logroutes",
 					"platformroutes",
 					"png",
 					"pem",
@@ -439,7 +442,9 @@
 					"userlist",
 					"unregister",
 					"userdataservice",
-					"parens"
+					"parens",
+					"prometheus",
+					"dockerode"
 				],
 				"skipIfMatch": ["http://[^s]*", "[a-z]scc"],
 				"skipWordIfMatch": ["^foobar.*$"],
