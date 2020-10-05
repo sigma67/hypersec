@@ -2,10 +2,17 @@
  *    SPDX-License-Identifier: Apache-2.0
  */
 /* eslint-disable */
-import React, { useState, useEffect, useRef } from 'react';
+import React, {
+	useState,
+	useEffect,
+	useRef,
+	useMemo,
+	useCallback
+} from 'react';
 import { Button, Row, Col } from 'reactstrap';
 import { makeStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
+import ParentSize from '@visx/responsive/lib/components/ParentSize';
 import moment from 'moment';
 import MomentUtils from '@date-io/moment';
 import {
@@ -14,19 +21,16 @@ import {
 	Card,
 	CardContent
 } from '@material-ui/core';
-import Input from '@material-ui/core/Input';
-import InputLabel from '@material-ui/core/InputLabel';
-import MenuItem from '@material-ui/core/MenuItem';
-import FormControl from '@material-ui/core/FormControl';
-import Select from '@material-ui/core/Select';
-import ListItemText from '@material-ui/core/ListItemText';
-import Checkbox from '@material-ui/core/Checkbox';
 import { Event, Today, Search } from '@material-ui/icons';
 import { DateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers';
-
-import MUIDataTable from 'mui-datatables';
+import ReactTable from '../Styled/Table';
+import matchSorter from 'match-sorter';
 import TransactionView from '../View/TransactionView';
-import TransactionBrushChart from '../View/SecurityView/TransactionLog/TransactionBrushChart';
+import TransactionBrush from '../Charts/TransactionBrush';
+import TransactionSize from '../Charts/TransactionSize';
+import TransactionTime from '../Charts/TransactionTime';
+import { schemeCategory10 } from 'd3-scale-chromatic';
+import { scaleOrdinal } from '@visx/scale';
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
@@ -43,7 +47,7 @@ const useStyles = makeStyles(theme => ({
 		alignItems: 'center'
 	},
 	smallSection: {
-		marginBottom: '2%',
+		marginBottom: '1%',
 		textAlign: 'center',
 		color: theme.palette === 'dark' ? '#ffffff' : undefined,
 		backgroundColor: theme.palette === 'dark' ? '#3c3558' : undefined
@@ -51,7 +55,7 @@ const useStyles = makeStyles(theme => ({
 	largeSection: {
 		height:
 			0.8 * window.screen.availHeight - (0.8 * window.screen.availHeight) / 8,
-		marginBottom: '2%',
+		marginBottom: '1%',
 		textAlign: 'center',
 		color: theme.palette === 'dark' ? '#ffffff' : undefined,
 		backgroundColor: theme.palette === 'dark' ? '#3c3558' : undefined
@@ -60,8 +64,19 @@ const useStyles = makeStyles(theme => ({
 		opacity: 0.8,
 		marginTop: '10px',
 		width: '100%'
+	},
+	brushRow: {
+		marginBottom: '4rem',
+		marginTop: '.5rem'
+	},
+	brushCol: {
+		display: 'flex',
+		flex: 1,
+		height: '10rem'
 	}
 }));
+
+const msPerBin = 3600000;
 
 function Transactions({
 	currentChannel,
@@ -79,27 +94,106 @@ function Transactions({
 	const [search, setSearch] = useState(false);
 	const [to, setTo] = useState(moment());
 	const [from, setFrom] = useState(moment().subtract(1, 'days'));
-	const [orgs, setOrgs] = useState([]);
-	const [options, setOptions] = useState([]);
+
+	const [organisations, setOrganisations] = useState([]);
 	useEffect(() => {
-		const opts = [];
-		transactionByOrg.forEach(element => {
-			opts.push({
-				label: element.creator_msp_id,
-				value: element.creator_msp_id
-			});
-		});
-		setOptions(opts);
+		const tempOrganisations = [];
+		transactionByOrg.forEach(element =>
+			tempOrganisations.push(element.creator_msp_id)
+		);
+		setOrganisations(tempOrganisations);
 	}, [transactionByOrg]);
+
+	const colorScale = useMemo(
+		() =>
+			scaleOrdinal({
+				range: schemeCategory10,
+				domain: ['total', ...organisations]
+			}),
+		[organisations]
+	);
+
+	const [displayedOrgs, setDisplayedOrgs] = useState(['total']);
+	const handleDisplayedOrgsChanged = org => {
+		const tempOrgs = [...displayedOrgs];
+		const index = tempOrgs.indexOf(org);
+		index > -1 ? tempOrgs.splice(index, 1) : tempOrgs.push(org);
+		setDisplayedOrgs(tempOrgs);
+	};
+
+	const [avgTrxSize, setAvgTrxSize] = useState(0);
+	const getAvgTransactionSize = () => {
+		let totalSize = 0;
+		let trxCount = 0;
+		if (!transactions) return 1;
+		transactions.forEach(trx => {
+			trxCount++;
+			totalSize += trx.size;
+		});
+		setAvgTrxSize(totalSize / trxCount);
+	};
 
 	const [transactions, setTransactions] = useState([]);
 	useEffect(() => {
-		if (!transactionListSearch) return;
-		setTransactions(transactionListSearch);
-	}, [transactionListSearch]);
+		search
+			? setTransactions(transactionListSearch)
+			: setTransactions(transactionList);
+	}, [transactionListSearch, transactionList]);
+
+	const [binnedTrx, setBinnedTrx] = useState([{ org: 'total', bins: [] }]);
+	const binTrx = useCallback(() => {
+		let currentBin = Math.floor(from / msPerBin) * msPerBin;
+		let binByOrg = [{ organisation: 'total', bins: [] }];
+
+		organisations.forEach(org =>
+			binByOrg.push({ organisation: org, bins: [] })
+		);
+		while (currentBin < to) {
+			binByOrg.forEach(orgBins =>
+				orgBins.bins.push({ timestamp: currentBin, transactions: [] })
+			);
+			currentBin += msPerBin;
+		}
+		transactions.forEach(transaction => {
+			const binTimestamp = new Date().setTime(
+				Math.floor(new Date(transaction.createdt).getTime() / msPerBin) *
+					msPerBin
+			);
+			if (binTimestamp <= from || binTimestamp > to) return;
+			binByOrg[0].bins
+				.find(bin => bin.timestamp === binTimestamp)
+				.transactions.push(transaction);
+			for (let i = 1; i < binByOrg.length; i++) {
+				if (transaction.creator_msp_id === binByOrg[i].organisation) {
+					binByOrg[i].bins
+						.find(bin => bin.timestamp === binTimestamp)
+						.transactions.push(transaction);
+				}
+			}
+		});
+		binByOrg.forEach(orgBins => {
+			orgBins.bins.sort((a, b) => {
+				if (new Date(a.timestamp) < new Date(b.timestamp)) return -1;
+				if (new Date(a.timestamp) > new Date(b.timestamp)) return 1;
+				return 0;
+			});
+			orgBins.bins.forEach(bin => {
+				bin.transactions.sort((a, b) => {
+					if (new Date(a.createdt) < new Date(b.createdt)) return -1;
+					if (new Date(a.createdt) > new Date(b.createdt)) return 1;
+					return 0;
+				});
+			});
+		});
+		setBinnedTrx(binByOrg);
+	}, [transactions, from, to, organisations]);
+	useEffect(() => {
+		binTrx(transactions);
+	}, [transactions, binTrx]);
 
 	const [selection, setSelection] = useState(null);
 	useEffect(() => {
+		getAvgTransactionSize();
 		const currentSelection = {};
 		transactions.forEach(element => {
 			currentSelection[element.blocknum] = false;
@@ -122,54 +216,95 @@ function Transactions({
 		}
 	}, [currentChannel, search]);
 
-	const columns = [
+	const columnHeaders = [
 		{
-			name: 'createdt',
-			label: 'Timestamp',
-			options: {
-				filter: true,
-				sort: true
-			}
+			Header: 'Creator',
+			accessor: 'creator_msp_id',
+			filterMethod: (filter, rows) =>
+				matchSorter(
+					rows,
+					filter.value,
+					{ keys: ['creator_msp_id'] },
+					{ threshold: matchSorter.rankings.SIMPLEMATCH }
+				),
+			filterAll: true
 		},
 		{
-			name: 'txhash',
-			label: 'Trx ID',
-			options: {
-				filter: true,
-				sort: true
-			}
+			Header: 'Channel Name',
+			accessor: 'channelname',
+			filterMethod: (filter, rows) =>
+				matchSorter(
+					rows,
+					filter.value,
+					{ keys: ['channelname'] },
+					{ threshold: matchSorter.rankings.SIMPLEMATCH }
+				),
+			filterAll: true
 		},
 		{
-			name: 'creator_msp_id',
-			label: 'Creator ID',
-			options: {
-				filter: true,
-				sort: true
-			}
+			Header: 'Tx Id',
+			accessor: 'txhash',
+			className: classes.hash,
+			Cell: row => (
+				<span>
+					<a
+						data-command="transaction-partial-hash"
+						className={classes.partialHash}
+						onClick={() => handleDialogOpen(row.value)}
+						href="#/transactions"
+					>
+						<div className={classes.fullHash} id="showTransactionId">
+							{row.value}
+						</div>{' '}
+						{row.value.slice(0, 6)}
+						{!row.value ? '' : '... '}
+					</a>
+				</span>
+			),
+			filterMethod: (filter, rows) =>
+				matchSorter(
+					rows,
+					filter.value,
+					{ keys: ['txhash'] },
+					{ threshold: matchSorter.rankings.SIMPLEMATCH }
+				),
+			filterAll: true
 		},
 		{
-			name: 'channelname',
-			label: 'Channel Name',
-			options: {
-				filter: true,
-				sort: true
-			}
+			Header: 'Type',
+			accessor: 'type',
+			filterMethod: (filter, rows) =>
+				matchSorter(
+					rows,
+					filter.value,
+					{ keys: ['type'] },
+					{ threshold: matchSorter.rankings.SIMPLEMATCH }
+				),
+			filterAll: true
 		},
 		{
-			name: 'type',
-			label: 'Name',
-			options: {
-				filter: true,
-				sort: true
-			}
+			Header: 'Chaincode',
+			accessor: 'chaincodename',
+			filterMethod: (filter, rows) =>
+				matchSorter(
+					rows,
+					filter.value,
+					{ keys: ['chaincodename'] },
+					{ threshold: matchSorter.rankings.SIMPLEMATCH }
+				),
+			filterAll: true
 		},
 		{
-			name: 'chaincodename',
-			label: 'Chaincode',
-			options: {
-				filter: true,
-				sort: true
-			}
+			Header: 'Timestamp',
+			accessor: 'createdt',
+			filterMethod: (filter, rows) =>
+				matchSorter(
+					rows,
+					filter.value,
+					{ keys: ['createdt'] },
+					{ threshold: matchSorter.rankings.SIMPLEMATCH }
+				),
+			filterAll: true
 		}
 	];
 
@@ -177,24 +312,14 @@ function Transactions({
 		let query = `from=${new Date(from).toString()}&&to=${new Date(
 			to
 		).toString()}`;
-		for (let i = 0; i < orgs.length; i++) {
-			query += `&&orgs=${orgs[i]}`;
+		for (let i = 0; i < organisations.length; i++) {
+			query += `&&orgs=${organisations[i]}`;
 		}
 		let channelhash = currentChannel;
 		if (channel !== undefined) {
 			channelhash = channel;
 		}
 		await getTransactionListSearch(channelhash, query);
-	};
-
-	const handleCustomRender = (selected, options) => {
-		if (selected.length === 0) return 'Select Orgs';
-		if (selected.length === options.length) return 'All Orgs Selected';
-		return selected.join(',');
-	};
-
-	const handleMultiSelect = value => {
-		setOrgs(value);
 	};
 
 	const handleDialogOpen = async tid => {
@@ -219,13 +344,65 @@ function Transactions({
 		setSearch(false);
 		setTo(moment());
 		setFrom(moment().subtract(1, 'days'));
-		setOrgs([]);
+		setOrganisations([]);
 		setErr(false);
 	};
 
 	const handleEye = (row, val) => {
 		const data = Object.assign({}, selection, { [row.index]: !val });
 		setSelection(data);
+	};
+
+	const [selectedBinnedTrx, setSelectedBinnedTrx] = useState([]);
+	const [selectedTrx, setSelectedTrx] = useState([]);
+	const [selectedFrom, setSelectedFrom] = useState(from);
+	const [selectedTo, setSelectedTo] = useState(to);
+	const handleBrushSelection = (selectionStart, selectionEnd) => {
+		const tmpSelectedTrx = [];
+		const tmpSelectedBinnedTrx = [];
+		binnedTrx.forEach(orgBin => {
+			const binTransactions = [];
+			orgBin.bins
+				.filter(
+					bin => bin.timestamp > selectedFrom && bin.timestamp < selectedTo
+				)
+				.forEach(bin => binTransactions.push(...bin.transactions));
+			tmpSelectedBinnedTrx.push({
+				organisation: orgBin.organisation,
+				transactions: binTransactions
+			});
+		});
+
+		if (displayedOrgs.indexOf('total') > -1) {
+			binnedTrx[0].bins
+				.filter(
+					bin => bin.timestamp > selectedFrom && bin.timestamp < selectedTo
+				)
+				.forEach(bin => tmpSelectedTrx.push(...bin.transactions));
+		} else {
+			for (let i = 0; i < displayedOrgs.length; i++) {
+				binnedTrx.forEach(orgaBin => {
+					if (orgaBin.organisation === displayedOrgs[i]) {
+						orgaBin.bins
+							.filter(
+								bin =>
+									bin.timestamp > selectedFrom && bin.timestamp < selectedTo
+							)
+							.forEach(bin => tmpSelectedTrx.push(...bin.transactions));
+					}
+				});
+			}
+		}
+		tmpSelectedTrx.sort((a, b) => {
+			if (new Date(a.createdt) < new Date(b.createdt)) return -1;
+			if (new Date(a.createdt) > new Date(b.createdt)) return 1;
+			return 0;
+		});
+
+		setSelectedBinnedTrx(tmpSelectedBinnedTrx);
+		setSelectedTrx(tmpSelectedTrx);
+		setSelectedFrom(selectionStart);
+		setSelectedTo(selectionEnd);
 	};
 
 	return (
@@ -235,7 +412,7 @@ function Transactions({
 					<Card className={`${classes.smallSection}`} variant="outlined">
 						<CardContent>
 							<Row>
-								<Col xs={3}>
+								<Col xs={4}>
 									<MuiPickersUtilsProvider utils={MomentUtils}>
 										<DateTimePicker
 											label="From"
@@ -263,7 +440,7 @@ function Transactions({
 										/>
 									</MuiPickersUtilsProvider>
 								</Col>
-								<Col xs={3}>
+								<Col xs={4}>
 									<MuiPickersUtilsProvider utils={MomentUtils}>
 										<DateTimePicker
 											label="To"
@@ -290,32 +467,6 @@ function Transactions({
 											}}
 										/>
 									</MuiPickersUtilsProvider>
-								</Col>
-								<Col xs={2}>
-									<FormControl variant="outlined" style={{ width: 100 + '%' }}>
-										<InputLabel htmlFor="select-orgs-label">
-											Select Orgs
-										</InputLabel>
-										<Select
-											multiple
-											value={orgs}
-											onChange={event => handleMultiSelect(event.target.value)}
-											renderValue={selected =>
-												handleCustomRender(selected, options)
-											}
-											input={<Input />}
-											label="Select Orgs"
-											id="select-orgs"
-											labelId="select-orgs-label"
-										>
-											{options.map(org => (
-												<MenuItem key={org.label} value={org.value}>
-													<Checkbox checked={orgs.indexOf(org.label) > -1} />
-													<ListItemText primary={org.label} />
-												</MenuItem>
-											))}
-										</Select>
-									</FormControl>
 								</Col>
 								<Col xs={2}>
 									<Button
@@ -358,25 +509,88 @@ function Transactions({
 				</Col>
 			</Row>
 			<Row>
+				<Col sm="12" className={classes.root}>
+					<Card className={`${classes.smallSection}`} variante="outlined">
+						<CardContent>
+							<Row className={classes.brushRow}>
+								<Col sm="12" className={classes.brushCol}>
+									<ParentSize debounceTime={10}>
+										{({ width: visWidth, height: visHeight }) => (
+											<TransactionBrush
+												parentWidth={visWidth}
+												parentHeight={visHeight}
+												colorScale={colorScale}
+												data={binnedTrx}
+												from={from}
+												to={to}
+												onBrushSelectionChange={handleBrushSelection}
+												displayedOrgs={displayedOrgs}
+												onDisplayedOrgsChange={handleDisplayedOrgsChanged}
+											/>
+										)}
+									</ParentSize>
+								</Col>
+							</Row>
+							<Row>
+								<Col sm="6" className={classes.brushCol}>
+									<ParentSize debounceTime={10}>
+										{({ width: visWidth, height: visHeight }) => (
+											<TransactionSize
+												parentWidth={visWidth}
+												parentHeight={visHeight}
+												colorScale={colorScale}
+												data={selectedTrx}
+												binnedData={selectedBinnedTrx}
+												from={selectedFrom}
+												to={selectedTo}
+												avgTrxSize={avgTrxSize || 1}
+												displayedOrgs={displayedOrgs}
+											/>
+										)}
+									</ParentSize>
+								</Col>
+								<Col sm="6" className={classes.brushCol}>
+									<ParentSize debounceTime={10}>
+										{({ width: visWidth, height: visHeight }) => (
+											<TransactionTime
+												parentWidth={visWidth}
+												parentHeight={visHeight}
+												data={selectedTrx}
+												from={selectedFrom}
+												to={selectedTo}
+											/>
+										)}
+									</ParentSize>
+								</Col>
+							</Row>
+						</CardContent>
+					</Card>
+				</Col>
+			</Row>
+			<Row>
 				<Col sm="12">
-					<Card className={`${classes.largeSection}`} variant="outlined">
+					<Card className={`${classes.smallSection}`} variant="outlined">
 						<CardContent>
 							<Row>
 								<Col xs={12}>
-									<TransactionBrushChart
-										data={transactions}
-										from={from}
-										to={to}
-									>
-										{selectedTrx => (
-											<MUIDataTable
-												className={classes.largeSection}
-												title="Transaction Details"
-												data={selectedTrx}
-												columns={columns}
-											/>
-										)}
-									</TransactionBrushChart>
+									<ReactTable
+										data={selectedTrx}
+										columns={columnHeaders}
+										defaultPageSize={10}
+										list
+										filterable
+										sorted={sorted}
+										onSortedChange={sorted => {
+											setSorted(sorted);
+										}}
+										filtered={filtered}
+										onFilteredChange={filtered => {
+											setFiltered(filtered);
+										}}
+										minRows={0}
+										style={{ height: '300' }}
+										showPagination={!(transactionList.length < 5)}
+									/>
 								</Col>
 							</Row>
 						</CardContent>
@@ -399,6 +613,17 @@ function Transactions({
 	);
 }
 
+/*  Transactions.propTypes = {
+	 currentChannel: currentChannelType.isRequired,
+	 getTransaction: getTransactionType.isRequired,
+	 transaction: transactionType,
+	 transactionList: transactionListType.isRequired
+	 };
+
+	 Transactions.defaultProps = {
+	 transaction: null
+	 };
+ */
 export default Transactions;
 
 /* istanbul ignore next */
@@ -583,97 +808,6 @@ export default Transactions;
  *
  * render() {
  * const { classes } = this.props;
- * const columnHeaders = [
- * {
- *	 Header: 'Creator',
- *	 accessor: 'creator_msp_id',
- *	 filterMethod: (filter, rows) =>
- *		 matchSorter(
- *			 rows,
- *			 filter.value,
- *			 { keys: ['creator_msp_id'] },
- *			 { threshold: matchSorter.rankings.SIMPLEMATCH }
- *		 ),
- *	 filterAll: true
- * },
- * {
- *	 Header: 'Channel Name',
- *	 accessor: 'channelname',
- *	 filterMethod: (filter, rows) =>
- *		 matchSorter(
- *			 rows,
- *			 filter.value,
- *			 { keys: ['channelname'] },
- *			 { threshold: matchSorter.rankings.SIMPLEMATCH }
- *		 ),
- *	 filterAll: true
- * },
- * {
- *	 Header: 'Tx Id',
- *	 accessor: 'txhash',
- *	 className: classes.hash,
- *	 Cell: row => (
- *		 <span>
- *			 <a
- *				 data-command="transaction-partial-hash"
- *				 className={classes.partialHash}
- *				 onClick={() => this.handleDialogOpen(row.value)}
- *				 href="#/transactions"
- *			 >
- *				 <div className={classes.fullHash} id="showTransactionId">
- *					 {row.value}
- *				 </div>{' '}
- *				 {row.value.slice(0, 6)}
- *				 {!row.value ? '' : '... '}
- *			 </a>
- *		 </span>
- *	 ),
- *	 filterMethod: (filter, rows) =>
- *		 matchSorter(
- *			 rows,
- *			 filter.value,
- *			 { keys: ['txhash'] },
- *			 { threshold: matchSorter.rankings.SIMPLEMATCH }
- *		 ),
- *	 filterAll: true
- * },
- * {
- *	 Header: 'Type',
- *	 accessor: 'type',
- *	 filterMethod: (filter, rows) =>
- *		 matchSorter(
- *			 rows,
- *			 filter.value,
- *			 { keys: ['type'] },
- *			 { threshold: matchSorter.rankings.SIMPLEMATCH }
- *		 ),
- *	 filterAll: true
- * },
- * {
- *	 Header: 'Chaincode',
- *	 accessor: 'chaincodename',
- *	 filterMethod: (filter, rows) =>
- *		 matchSorter(
- *			 rows,
- *			 filter.value,
- *			 { keys: ['chaincodename'] },
- *			 { threshold: matchSorter.rankings.SIMPLEMATCH }
- *		 ),
- *	 filterAll: true
- * },
- * {
- *	 Header: 'Timestamp',
- *	 accessor: 'createdt',
- *	 filterMethod: (filter, rows) =>
- *		 matchSorter(
- *			 rows,
- *			 filter.value,
- *			 { keys: ['createdt'] },
- *			 { threshold: matchSorter.rankings.SIMPLEMATCH }
- *		 ),
- *	 filterAll: true
- * }
- * ];
  * const transactionList = this.state.search
  * ? this.props.transactionListSearch
  * : this.props.transactionList;

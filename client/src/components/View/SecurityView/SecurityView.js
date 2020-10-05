@@ -4,7 +4,6 @@ import { withStyles } from '@material-ui/core/styles';
 import { Row, Col } from 'reactstrap';
 import { Card, CardHeader, CardContent } from '@material-ui/core';
 import Map from '../../Charts/Map';
-import TransactionLog from './TransactionLog/TransactionLog';
 
 const styles = theme => {
 	const { type } = theme.palette;
@@ -119,7 +118,6 @@ export class SecurityView extends Component {
 									title="Transaction Log"
 									subheader="TransactionSize and Processing Time"
 								/>
-								<TransactionLog />
 							</Card>
 						</Col>
 					</Row>

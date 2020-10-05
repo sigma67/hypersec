@@ -14,7 +14,7 @@ import {
 	transactionListType
 } from '../types';
 
-export const TransactionsView = ({
+function TransactionsView({
 	currentChannel,
 	getTransaction,
 	getTransactionInfo,
@@ -24,21 +24,23 @@ export const TransactionsView = ({
 	getTransactionListSearch,
 	transactionByOrg,
 	transactionListSearch
-}) => (
-	/*   <View> */
-	<Transactions
-		currentChannel={currentChannel}
-		transactionList={transactionList}
-		getTransactionList={getTransactionList}
-		transaction={transaction}
-		transactionByOrg={transactionByOrg}
-		getTransactionInfo={getTransactionInfo}
-		getTransaction={getTransaction}
-		getTransactionListSearch={getTransactionListSearch}
-		transactionListSearch={transactionListSearch}
-	/>
-	/*   </View> */
-);
+}) {
+	return (
+		/*   <View> */
+		<Transactions
+			currentChannel={currentChannel}
+			transactionList={transactionList}
+			getTransactionList={getTransactionList}
+			transaction={transaction}
+			transactionByOrg={transactionByOrg}
+			getTransactionInfo={getTransactionInfo}
+			getTransaction={getTransaction}
+			getTransactionListSearch={getTransactionListSearch}
+			transactionListSearch={transactionListSearch}
+		/>
+		/*   </View> */
+	);
+}
 
 TransactionsView.propTypes = {
 	currentChannel: currentChannelType.isRequired,
