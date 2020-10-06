@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import { scaleTime, scaleLinear } from '@visx/scale';
+import { scaleLinear, scaleBand } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
-import { Circle, LinePath } from '@visx/shape';
+import { LinePath, BarStack } from '@visx/shape';
 import { Group } from '@visx/group';
 import { Brush } from '@visx/brush';
 import { PatternLines } from '@visx/pattern';
-import { curveMonotoneY } from '@visx/curve';
+import { curveMonotoneX } from '@visx/curve';
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
+import { timeParse, timeFormat } from 'd3-time-format';
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
@@ -27,9 +28,14 @@ const useStyles = makeStyles(theme => ({
  */
 const margin = { top: 10, bottom: 30, left: 40, right: 0 };
 const PATTERN_ID = 'brush_pattern';
-const selectedBrushStyle = { fill: `url(#${PATTERN_ID})`, stroke: 'white' };
-const msPerBin = 3600000; // = 1 hour
+// const selectedBrushStyle = { fill: `url(#${PATTERN_ID})`, stroke: 'white' };
+const selectedBrushStyle = { fill: '#919191', opacity: .5, stroke: 'white' }
 const legendGlyphSize = 20;
+
+const getDate = d => d.timestamp;
+const parseDate = timeParse('%Q');
+const format = timeFormat('%b %d, %H:%M');
+const formatDate = (date) => format(parseDate(date));
 
 function TransactionBrush({
 	parentWidth,
@@ -54,26 +60,27 @@ function TransactionBrush({
 	}, [parentHeight]);
 
 	const [maxTrxCount, setMaxTrxCount] = useState(0);
+	const [total, setTotal] = useState([]);
 	useEffect(() => {
 		let maxValue = 0;
-		if (!data[0]) return 1;
-		data[0].bins.forEach(bin => {
-			maxValue =
-				bin.transactions.length > maxValue ? bin.transactions.length : maxValue;
+		const tempTotal = [];
+		if (data.length < 1) return;
+		data.forEach(bin => {
+			tempTotal.push({timestamp: bin.timestamp, transactions: [...bin.total]});
+			maxValue = 	bin.total.length > maxValue ? bin.total.length : maxValue;
 		});
+		setTotal(tempTotal);
 		setMaxTrxCount(maxValue);
 	}, [data]);
 
-	const timeScale = useMemo(
+	const barStackScale = useMemo(
 		() =>
-			scaleTime({
+			scaleBand({
 				range: [0, width],
-				domain: [
-					Math.floor(from / msPerBin) * msPerBin,
-					Math.floor(to / msPerBin) * msPerBin
-				]
+				domain: data.map(d => getDate(d)),
+				padding: 0.4
 			}),
-		[width, from, to]
+		[width, data]
 	);
 
 	const countScale = useMemo(
@@ -88,9 +95,10 @@ function TransactionBrush({
 
 	const onBrushChange = domain => {
 		if (!domain) return;
-		const { x0, x1 } = domain;
-		onBrushSelectionChange(x0, x1);
+		onBrushSelectionChange(domain.xValues);
 	};
+
+	const getColor = d => colorScale(d);
 
 	return (
 		<React.Fragment>
@@ -116,11 +124,7 @@ function TransactionBrush({
 											y2={legendGlyphSize / 2}
 										/>
 										<circle
-											fill={
-												displayedOrgs.indexOf(label.datum) > -1
-													? label.value
-													: '#fff'
-											}
+											fill={ displayedOrgs.indexOf(label.datum) > -1 ? label.value : '#fff'	}
 											cx={legendGlyphSize / 2}
 											cy={legendGlyphSize / 2}
 											r="5"
@@ -145,37 +149,56 @@ function TransactionBrush({
 			<svg width={parentWidth} height={parentHeight}>
 				<g transform={`translate(${margin.left}, ${margin.top})`}>
 					<Group>
-						{data.map(orgBin => {
-							if (displayedOrgs.indexOf(orgBin.organisation) === -1)
-								return <div key={`line-${orgBin.organisation}`} />;
-							return (
-								<Group key={`line-${orgBin.organisation}`}>
-									{orgBin.bins.map(bin => {
-										if (bin.transactions.length === 0)
-											return <div key={`bin-${bin.timestamp}`} />;
+						<BarStack
+							data = { data }
+							keys = { displayedOrgs }
+							value = {(d, k) => d[k].length}
+							x = { getDate }
+							xScale = { barStackScale }
+							yScale = { countScale }
+							color = { getColor }
+						>
+							{barStacks =>
+								barStacks.map(barStack =>
+									barStack.bars.map(bar => {
+										if (bar.key === 'total') return <div/>;
 										return (
-											<Circle
-												key={`point-${bin.timestamp}-${bin.transactions.length}`}
-												cx={timeScale(bin.timestamp)}
-												cy={countScale(bin.transactions.length)}
-												r={5}
-												fill={colorScale(orgBin.organisation)}
-											/>
-										);
-									})}
-									<LinePath
-										curve={curveMonotoneY}
-										data={orgBin.bins}
-										x={d => {
-											return timeScale(d.timestamp);
-										}}
-										y={d => countScale(d.transactions.length)}
-										stroke={colorScale(orgBin.organisation)}
-										shapeRendering="geometricPrecision"
-									/>
-								</Group>
-							);
-						})}
+										<rect
+											key={`bar-stack-${barStack.index}-${bar.index}`}
+											x = { bar.x }
+											y = { bar.y }
+											height = { bar.height }
+											width = { bar.width }
+											fill = { bar.color }
+										/>
+									)})
+								)
+							}
+						</BarStack>
+					</Group>
+					<Group>
+						<LinePath
+							curve = { curveMonotoneX }
+							data = { total }
+							x = { d => (barStackScale(d.timestamp) + barStackScale.bandwidth() / 2) }
+							y = { d => countScale(d.transactions.length) }
+							stroke={colorScale('total')}
+							strokeWidth = {2}
+							strokeDasharray = {'9, 5'}
+							shapeRendering="geometricPrecision"
+						/>
+{/* 						{total.map(bin => (
+							<Circle
+								key = {`total-point-${bin.timestamp}`}
+								cx = { barStackScale(bin.timestamp) + barStackScale.bandwidth() / 2 }
+								cy = { countScale(bin.transactions.length) }
+								r = { 5 }
+								fill={ '#fff'	}
+								stroke = { colorScale('total') }
+							/>
+						))} */}
+					</Group>
+					<Group>
 						<PatternLines
 							id={PATTERN_ID}
 							height={8}
@@ -185,7 +208,7 @@ function TransactionBrush({
 							orientation={['diagonal']}
 						/>
 						<Brush
-							xScale={timeScale}
+							xScale={barStackScale}
 							yScale={countScale}
 							width={width}
 							height={height}
@@ -193,14 +216,18 @@ function TransactionBrush({
 							resizeTriggerAreas={['left', 'right']}
 							brushDirection="horizontal"
 							onChange={onBrushChange}
-							onClick={() => onBrushSelectionChange(data, from, to)}
+							onClick={() => onBrushSelectionChange([])}
 							selectedBoxStyle={selectedBrushStyle}
 						/>
 					</Group>
-
 					<AxisBottom
-						scale={timeScale}
+						scale={barStackScale}
 						top={height}
+						tickFormat={formatDate}
+						tickLabelProps={() => ({
+							fontSize: 11,
+							textAnchor: 'middle',
+						})}
 						numTicks={width > 520 ? 20 : 10}
 					/>
 					<AxisLeft scale={countScale} numTicks={4} />

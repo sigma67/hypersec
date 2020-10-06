@@ -29,7 +29,7 @@ import TransactionView from '../View/TransactionView';
 import TransactionBrush from '../Charts/TransactionBrush';
 import TransactionSize from '../Charts/TransactionSize';
 import TransactionTime from '../Charts/TransactionTime';
-import { schemeCategory10 } from 'd3-scale-chromatic';
+import { schemeAccent } from 'd3-scale-chromatic';
 import { scaleOrdinal } from '@visx/scale';
 
 /* istanbul ignore next */
@@ -76,7 +76,7 @@ const useStyles = makeStyles(theme => ({
 	}
 }));
 
-const msPerBin = 3600000;
+const msPerBin = 3600000; // = 1 hour
 
 function Transactions({
 	currentChannel,
@@ -105,16 +105,20 @@ function Transactions({
 	}, [transactionByOrg]);
 
 	const colorScale = useMemo(
-		() =>
-			scaleOrdinal({
-				range: schemeCategory10,
+		() => {
+			return scaleOrdinal({
+				range: ['#1c25d8', ...schemeAccent],
 				domain: ['total', ...organisations]
-			}),
+			})},
 		[organisations]
 	);
 
-	const [displayedOrgs, setDisplayedOrgs] = useState(['total']);
+	const [displayedOrgs, setDisplayedOrgs] = useState([]);
+	useEffect(() => {
+		setDisplayedOrgs(organisations);
+	}, [organisations])
 	const handleDisplayedOrgsChanged = org => {
+		if (org === 'total') return;
 		const tempOrgs = [...displayedOrgs];
 		const index = tempOrgs.indexOf(org);
 		index > -1 ? tempOrgs.splice(index, 1) : tempOrgs.push(org);
@@ -140,52 +144,25 @@ function Transactions({
 			: setTransactions(transactionList);
 	}, [transactionListSearch, transactionList]);
 
-	const [binnedTrx, setBinnedTrx] = useState([{ org: 'total', bins: [] }]);
+	const [binnedTrx, setBinnedTrx] = useState([]);
 	const binTrx = useCallback(() => {
-		let currentBin = Math.floor(from / msPerBin) * msPerBin;
-		let binByOrg = [{ organisation: 'total', bins: [] }];
-
-		organisations.forEach(org =>
-			binByOrg.push({ organisation: org, bins: [] })
-		);
-		while (currentBin < to) {
-			binByOrg.forEach(orgBins =>
-				orgBins.bins.push({ timestamp: currentBin, transactions: [] })
-			);
-			currentBin += msPerBin;
+		let currentBinTime = Math.floor(from / msPerBin) * msPerBin;
+		let bins = [];
+		while (currentBinTime < to) {
+			const bin = {timestamp: currentBinTime, total: []};
+			organisations.forEach(org => {
+				bin[org] = [];
+			});
+			bins.push(bin);
+			currentBinTime += msPerBin;
 		}
-		transactions.forEach(transaction => {
-			const binTimestamp = new Date().setTime(
-				Math.floor(new Date(transaction.createdt).getTime() / msPerBin) *
-					msPerBin
-			);
-			if (binTimestamp <= from || binTimestamp > to) return;
-			binByOrg[0].bins
-				.find(bin => bin.timestamp === binTimestamp)
-				.transactions.push(transaction);
-			for (let i = 1; i < binByOrg.length; i++) {
-				if (transaction.creator_msp_id === binByOrg[i].organisation) {
-					binByOrg[i].bins
-						.find(bin => bin.timestamp === binTimestamp)
-						.transactions.push(transaction);
-				}
-			}
+		transactions.forEach((transaction) => {
+			const trxBinTimeStamp = new Date().setTime(Math.floor(new Date(transaction.createdt).getTime() / msPerBin) * msPerBin);
+			if (trxBinTimeStamp < from ||trxBinTimeStamp > to) return;
+			bins.find(bin => bin.timestamp === trxBinTimeStamp)['total'].push(transaction);
+			bins.find(bin => bin.timestamp === trxBinTimeStamp)[transaction.creator_msp_id].push(transaction);
 		});
-		binByOrg.forEach(orgBins => {
-			orgBins.bins.sort((a, b) => {
-				if (new Date(a.timestamp) < new Date(b.timestamp)) return -1;
-				if (new Date(a.timestamp) > new Date(b.timestamp)) return 1;
-				return 0;
-			});
-			orgBins.bins.forEach(bin => {
-				bin.transactions.sort((a, b) => {
-					if (new Date(a.createdt) < new Date(b.createdt)) return -1;
-					if (new Date(a.createdt) > new Date(b.createdt)) return 1;
-					return 0;
-				});
-			});
-		});
-		setBinnedTrx(binByOrg);
+		setBinnedTrx(bins);
 	}, [transactions, from, to, organisations]);
 	useEffect(() => {
 		binTrx(transactions);
@@ -353,56 +330,29 @@ function Transactions({
 		setSelection(data);
 	};
 
-	const [selectedBinnedTrx, setSelectedBinnedTrx] = useState([]);
 	const [selectedTrx, setSelectedTrx] = useState([]);
 	const [selectedFrom, setSelectedFrom] = useState(from);
 	const [selectedTo, setSelectedTo] = useState(to);
-	const handleBrushSelection = (selectionStart, selectionEnd) => {
-		const tmpSelectedTrx = [];
-		const tmpSelectedBinnedTrx = [];
-		binnedTrx.forEach(orgBin => {
-			const binTransactions = [];
-			orgBin.bins
-				.filter(
-					bin => bin.timestamp > selectedFrom && bin.timestamp < selectedTo
-				)
-				.forEach(bin => binTransactions.push(...bin.transactions));
-			tmpSelectedBinnedTrx.push({
-				organisation: orgBin.organisation,
-				transactions: binTransactions
-			});
-		});
-
-		if (displayedOrgs.indexOf('total') > -1) {
-			binnedTrx[0].bins
-				.filter(
-					bin => bin.timestamp > selectedFrom && bin.timestamp < selectedTo
-				)
-				.forEach(bin => tmpSelectedTrx.push(...bin.transactions));
-		} else {
-			for (let i = 0; i < displayedOrgs.length; i++) {
-				binnedTrx.forEach(orgaBin => {
-					if (orgaBin.organisation === displayedOrgs[i]) {
-						orgaBin.bins
-							.filter(
-								bin =>
-									bin.timestamp > selectedFrom && bin.timestamp < selectedTo
-							)
-							.forEach(bin => tmpSelectedTrx.push(...bin.transactions));
-					}
-				});
-			}
+	const handleBrushSelection = (selectedBins) => {
+		const selection = [];
+		if(selectedBins.length < 1) {
+			setSelectedTrx(selection);
+			setSelectedFrom(from);
+			setSelectedTo(to);
+			return;
 		}
-		tmpSelectedTrx.sort((a, b) => {
-			if (new Date(a.createdt) < new Date(b.createdt)) return -1;
-			if (new Date(a.createdt) > new Date(b.createdt)) return 1;
-			return 0;
+		binnedTrx.forEach(bin => {
+			if (selectedBins.indexOf(bin.timestamp) > -1) {
+				selection.push(...bin.total);
+			}
 		});
-
-		setSelectedBinnedTrx(tmpSelectedBinnedTrx);
-		setSelectedTrx(tmpSelectedTrx);
-		setSelectedFrom(selectionStart);
-		setSelectedTo(selectionEnd);
+		setSelectedTrx(selection);
+		setSelectedFrom(selectedBins[0]);
+		setSelectedTo(
+			selectedBins[selectedBins.length - 1] ?
+			selectedBins[selectedBins.length - 1] + msPerBin / 2 :
+			selectedBins[selectedBins.length - 2] + msPerBin / 2
+		);
 	};
 
 	return (
@@ -540,7 +490,6 @@ function Transactions({
 												parentHeight={visHeight}
 												colorScale={colorScale}
 												data={selectedTrx}
-												binnedData={selectedBinnedTrx}
 												from={selectedFrom}
 												to={selectedTo}
 												avgTrxSize={avgTrxSize || 1}

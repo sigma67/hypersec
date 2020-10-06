@@ -1,27 +1,26 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { scaleTime, scaleLinear } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
-import { AreaClosed, AreaStack, Area } from '@visx/shape';
-import { curveMonotoneX, curveMonotoneY } from '@visx/curve';
+import { LinePath } from '@visx/shape';
+import { curveMonotoneX } from '@visx/curve';
 import { Group } from '@visx/group';
 import { max } from 'd3';
+import { timeParse, timeFormat } from 'd3-time-format';
 
 /**
  * Global constants
  */
 const margin = { top: 10, bottom: 30, left: 50, right: 30 };
 
-const test = d => {
-	console.log(d);
-	return 0;
-};
+const parseDate = timeParse('%Q');
+const format = timeFormat('%b %d, %H:%M');
+const formatDate = (date) => format(parseDate(new Date(date).getTime()));
 
 function TransactionSize({
 	parentWidth,
 	parentHeight,
 	colorScale,
 	data,
-	binnedData,
 	from,
 	to,
 	avgTrxSize,
@@ -57,8 +56,6 @@ function TransactionSize({
 			}),
 		[height, yMax]
 	);
-
-	const test = [];
 	useEffect(() => {
 		setYMax(
 			data
@@ -67,56 +64,39 @@ function TransactionSize({
 					: avgTrxSize
 				: avgTrxSize
 		);
-		data.forEach(transaction => {
-			let temp = {};
-			temp['timestamp'] = new Date(transaction.createdt).getTime();
-			displayedOrgs.forEach(org => {
-				temp[org] = transaction.creator_msp_id === org ? transaction.size : 0;
-			});
-			test.push(temp);
-		});
 	}, [data, avgTrxSize]);
-
-	const getTimestamp = d => d.timestamp;
-	const getColor = d => {
-		return colorScale(d);
-	};
-	const getValue = d => {
-		console.log(d);
-		return 1;
-	};
-	const getY0 = d => countScale(d['0']);
-	const getY1 = d => countScale(d['1']);
 
 	return (
 		<React.Fragment>
 			<svg width={parentWidth} height={parentHeight}>
 				<g transform={`translate(${margin.left}, ${margin.top})`}>
 					<Group>
-						<AreaStack
-							data={data}
-							keys={displayedOrgs}
-							value={getValue}
-							xScale={timeScale}
-							yScale={countScale}
-							x={getTimestamp}
-							color={getColor}
-						>
-							{areaStacks => {
-								areaStacks.stacks.map(areaStack => {
-									console.log(areaStack);
-									areaStack.map(data => {
-										return <Area data={data.data} x={test} />;
-									});
-								});
-							}}
-						</AreaStack>
+						{displayedOrgs.map(org => {
+							const orgTrx = data.filter(trx => trx.creator_msp_id === org);
+							orgTrx.sort((a, b) => {
+								if (new Date(a.createdt) < new Date(b.createdt)) return -1;
+								if (new Date(a.createdt) > new Date(b.createdt)) return 1;
+								return 0;
+							});
+							return (
+								<LinePath
+									key = { `trxSize-${org}` }
+									data = { orgTrx }
+									x = { d => timeScale(new Date(d.createdt).getTime()) }
+									y = { d => countScale(d.size) }
+									strokeWidth = { 3 }
+									curve = { curveMonotoneX }
+									stroke = { colorScale(org) }
+									shapeRendering = "geometricPrecision"
+								/>
+							)
+						})}
 					</Group>
-
 					<AxisBottom
 						scale={timeScale}
 						top={height}
-						numTicks={width > 520 ? 10 : 5}
+						numTicks={width > 520 ? 8 : 5}
+						tickFormat={formatDate}
 					/>
 					<AxisLeft scale={countScale} numTicks={4} />
 					<text x="-30" y="10" transform="rotate(-90)" fontSize={10}>
