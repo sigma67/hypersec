@@ -42,8 +42,6 @@ function TransactionBrush({
 	parentHeight,
 	colorScale,
 	data,
-	from,
-	to,
 	onBrushSelectionChange,
 	displayedOrgs,
 	onDisplayedOrgsChange

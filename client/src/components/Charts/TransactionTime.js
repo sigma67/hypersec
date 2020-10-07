@@ -5,11 +5,16 @@ import { AreaClosed } from '@visx/shape';
 import { curveMonotoneX } from '@visx/curve';
 import { Group } from '@visx/group';
 import { max } from 'd3';
+import { timeParse, timeFormat } from 'd3-time-format';
 
 /**
  * Global constants
  */
 const margin = { top: 10, bottom: 30, left: 50, right: 30 };
+
+const parseDate = timeParse('%Q');
+const format = timeFormat('%b %d, %H:%M');
+const formatDate = (date) => format(parseDate(new Date(date).getTime()));
 
 function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 	const [width, setWidth] = useState(0);
@@ -21,6 +26,8 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 	useEffect(() => {
 		setHeight(parentHeight > 0 ? parentHeight - margin.top - margin.bottom : 0);
 	}, [parentHeight]);
+
+	const [yMax, setYMax] = useState(1);
 
 	const timeScale = useMemo(
 		() =>
@@ -35,10 +42,10 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 		() =>
 			scaleLinear({
 				range: [height, 0],
-				domain: [0, 10],
+				domain: [0, yMax],
 				nice: true
 			}),
-		[height]
+		[height, yMax]
 	);
 
 	useEffect(() => {}, [data]);
@@ -47,10 +54,14 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 		<React.Fragment>
 			<svg width={parentWidth} height={parentHeight}>
 				<g transform={`translate(${margin.left}, ${margin.top})`}>
+					<Group>
+
+					</Group>
 					<AxisBottom
 						scale={timeScale}
 						top={height}
-						numTicks={width > 520 ? 10 : 5}
+						numTicks={width > 520 ? 8 : 5}
+						tickFormat={formatDate}
 					/>
 					<AxisLeft scale={countScale} numTicks={4} />
 					<text x="-30" y="10" transform="rotate(-90)" fontSize={10}>
