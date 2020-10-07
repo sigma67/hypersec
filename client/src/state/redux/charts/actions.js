@@ -66,6 +66,11 @@ const updateChannel = channel => ({
   payload: { channel },
 });
 
+const getMetrics = metrics => ({
+		type: types.METRICS,
+		payload: { metrics },
+})
+
 export default {
   getBlockPerHour,
   getBlockPerMin,
@@ -80,4 +85,5 @@ export default {
   updateChannel,
   getErroMessage,
   getBlockActivity,
+	 getMetrics
 };

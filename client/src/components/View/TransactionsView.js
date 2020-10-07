@@ -89,6 +89,7 @@ function TransactionsView({
 	getTransaction,
 	getTransactionInfo,
 	getTransactionList,
+ getMetrics,
 	transaction,
 	transactionList,
 	getTransactionListSearch,
@@ -218,6 +219,14 @@ function TransactionsView({
 			searchTransactionList();
 		}, 60000);
 		await searchTransactionList();
+		const now = Date.now()/1000;
+		let metrics = await getMetrics(
+			"rate(endorser_proposal_duration_sum[5m])/rate(endorser_proposal_duration_count[5m])",
+			now - 3600,
+			now,
+			84
+		)
+		console.log(metrics)
 		setSearch(true);
 	};
 

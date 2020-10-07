@@ -59,7 +59,8 @@ const {
 	dashStats,
 	changeChannel,
 	blockActivity,
-	peerStatus
+	peerStatus,
+	metrics
 } = chartOperations;
 
 const {
@@ -675,6 +676,7 @@ export default compose(
 			getChangeChannel: changeChannel, // not in syncdata
 			getChannels: channels,
 			getDashStats: dashStats,
+			getMetrics: metrics,
 			getPeerList: peerList,
 			getPeerStatus: peerStatus,
 			getBlockActivity: blockActivity,
