@@ -125,7 +125,7 @@ function Transactions({
 	};
 
 	return (
-		<div>
+		<React.Fragment>
 			<ReactTable
 				data={data}
 				columns={columnHeaders}
@@ -156,7 +156,7 @@ function Transactions({
 					onClose={handleDialogClose}
 				/>
 			</Dialog>
-		</div>
+		</React.Fragment>
 	);
 }
 

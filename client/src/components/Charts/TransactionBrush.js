@@ -7,20 +7,21 @@ import { Group } from '@visx/group';
 import { Brush } from '@visx/brush';
 import { PatternLines } from '@visx/pattern';
 import { curveMonotoneX } from '@visx/curve';
-import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
+import { GridRows } from '@visx/grid';
 import { timeParse, timeFormat } from 'd3-time-format';
+import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
 	legend: {
 		lineHeight: '0.9em',
 		color: '#000',
-		fontSize: '10px',
+		fontSize: '11px',
 		paddingTop: '10px',
 		paddingBottom: '10px',
 		float: 'left',
 		marginLeft: '40px'
-	}
+	},
 }));
 
 /**
@@ -30,7 +31,6 @@ const margin = { top: 10, bottom: 30, left: 40, right: 0 };
 const PATTERN_ID = 'brush_pattern';
 // const selectedBrushStyle = { fill: `url(#${PATTERN_ID})`, stroke: 'white' };
 const selectedBrushStyle = { fill: '#919191', opacity: .5, stroke: 'white' }
-const legendGlyphSize = 20;
 
 const getDate = d => d.timestamp;
 const parseDate = timeParse('%Q');
@@ -46,6 +46,7 @@ function TransactionBrush({
 	displayedOrgs,
 	onDisplayedOrgsChange
 }) {
+	const legendGlyphSize = 20;
 	const classes = useStyles();
 	const [width, setWidth] = useState(0);
 	useEffect(() => {
@@ -104,48 +105,81 @@ function TransactionBrush({
 				<LegendOrdinal scale={colorScale}>
 					{labels => (
 						<div style={{ display: 'flex', flexDirection: 'row' }}>
-							{labels.map((label, i) => (
-								<LegendItem
-									key={`legend-organisation-${label.datum}`}
-									margin="0 5px"
-									onClick={() => {
-										onDisplayedOrgsChange(label.datum);
-									}}
-								>
-									<svg width={legendGlyphSize} height={legendGlyphSize}>
-										<line
-											stroke={label.value}
-											strokeWidth={2}
-											x1={0}
-											x2={legendGlyphSize}
-											y1={legendGlyphSize / 2}
-											y2={legendGlyphSize / 2}
-										/>
-										<circle
-											fill={ displayedOrgs.indexOf(label.datum) > -1 ? label.value : '#fff'	}
-											cx={legendGlyphSize / 2}
-											cy={legendGlyphSize / 2}
-											r="5"
-											stroke={label.value}
-										/>
-									</svg>
-									<LegendLabel
-										align="left"
-										margin="0 0 0 4px"
-										onClick={() => {
-											onDisplayedOrgsChange(label.datum);
-										}}
-									>
-										{label.text}
-									</LegendLabel>
-								</LegendItem>
-							))}
+							{labels.map((label, i) => {
+								if(label.datum === 'total') {
+									return (
+										<LegendItem
+											key = {`brush-legend-total`}
+											margin = "0 5px"
+										>
+											<svg width = { legendGlyphSize } height = { legendGlyphSize }>
+												<line
+													stroke = {label.value}
+													strokeWidth = { 2 }
+													strokeDasharray = {'5, 5'}
+													x1={0}
+													x2={legendGlyphSize}
+													y1={legendGlyphSize / 2}
+													y2={legendGlyphSize / 2}
+												/>
+											</svg>
+											<LegendLabel
+												align="left"
+												margin="0 0 0 4px"
+											>
+												{label.text}
+											</LegendLabel>
+										</LegendItem>
+									)
+								}	else {
+									return (
+										<LegendItem
+											key={`legend-organisation-${label.datum}`}
+											margin="0 5px"
+											onClick={() => {
+												onDisplayedOrgsChange(label.datum);
+											}}
+										>
+											<svg width={legendGlyphSize} height={legendGlyphSize}>
+											<rect
+												key={`legend-organisation-${label.datum}`}
+												x = { 0 }
+												y = { 0 }
+												height = {legendGlyphSize }
+												width = { legendGlyphSize }
+												strokeWidth = { 2 }
+												stroke={ label.value }
+												fill={ displayedOrgs.indexOf(label.datum) > -1 ? label.value : '#fff'	}
+												/>
+											</svg>
+											<LegendLabel
+												align="left"
+												margin="0 0 0 4px"
+												onClick={() => {
+													onDisplayedOrgsChange(label.datum);
+												}}
+											>
+												{label.text}
+											</LegendLabel>
+										</LegendItem>
+									)
+								}
+							})}
 						</div>
 					)}
 				</LegendOrdinal>
 			</div>
 			<svg width={parentWidth} height={parentHeight}>
 				<g transform={`translate(${margin.left}, ${margin.top})`}>
+					<GridRows
+            scale={countScale}
+            width={width}
+            strokeDasharray="3,3"
+            stroke="#919191"
+            strokeOpacity={0.3}
+						pointerEvents="none"
+						numTicks={8}
+          />
 					<Group>
 						<BarStack
 							data = { data }

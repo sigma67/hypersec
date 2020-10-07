@@ -10,7 +10,7 @@ import React, {
 	useCallback
 } from 'react';
 import View from '../Styled/View';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles  } from '@material-ui/core/styles';
 import moment from 'moment';
 import MomentUtils from '@date-io/moment';
 import Transactions from '../Lists/Transactions';
@@ -19,13 +19,16 @@ import TransactionSize from '../Charts/TransactionSize';
 import TransactionTime from '../Charts/TransactionTime';
 import { schemeAccent } from 'd3-scale-chromatic';
 import { scaleOrdinal } from '@visx/scale';
-import { Button, Row, Col } from 'reactstrap';
+import { Row, Col } from 'reactstrap';
+import ButtonGroup from '@material-ui/core/ButtonGroup';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
 import {
+	Button,
 	IconButton,
 	InputAdornment,
 	Card,
-	CardContent
+	CardContent,
+	CircularProgress
 } from '@material-ui/core';
 import { Event, Today, Search } from '@material-ui/icons';
 import { DateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers';
@@ -66,9 +69,9 @@ const useStyles = makeStyles(theme => ({
 		color: theme.palette === 'dark' ? '#ffffff' : undefined,
 		backgroundColor: theme.palette === 'dark' ? '#3c3558' : undefined
 	},
-	customButton: {
-		opacity: 0.8,
-		marginTop: '10px',
+	searchButton: {
+		backgroundColor: '#58c5c2',
+		color: '#ffffff',
 		width: '100%'
 	},
 	brushRow: {
@@ -79,10 +82,28 @@ const useStyles = makeStyles(theme => ({
 		display: 'flex',
 		flex: 1,
 		height: '10rem'
+	},
+	wrapper: {
+		marginTop: '10px',
+		position: 'relative',
+		width: '100%'
+  },
+  buttonProgress: {
+		color: '#ffffff',
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -12,
+    marginLeft: -12,
+	},
+	activeBinMs: {
+		color: '#ffffff',
+		backgroundColor: '#58c5c2'
+	},
+	inactiveBinMs: {
+		backgroundColor: 'ffffff'
 	}
 }));
-
-const msPerBin = 3600000; // = 1 hour
 
 function TransactionsView({
 	currentChannel,
@@ -99,8 +120,42 @@ function TransactionsView({
 	const [search, setSearch] = useState(false);
 	const [to, setTo] = useState(moment());
 	const [from, setFrom] = useState(moment().subtract(1, 'days'));
-
+	const [transactions, setTransactions] = useState([]);
+	const [binnedTrx, setBinnedTrx] = useState([]);
 	const [organisations, setOrganisations] = useState([]);
+	const [displayedOrgs, setDisplayedOrgs] = useState([...organisations]);
+	const [msPerBin, setMsPerBin] = useState(3600000);
+	const [avgTrxSize, setAvgTrxSize] = useState(0);
+	const [filtered, setFiltered] = useState([]);
+	const [sorted, setSorted] = useState([]);
+	const [err, setErr] = useState(false);
+	const [loading, setLoading] = useState(false);
+	const [selectedTrx, setSelectedTrx] = useState([]);
+	const [selectedFrom, setSelectedFrom] = useState(from);
+	const [selectedTo, setSelectedTo] = useState(to);
+
+	const prevChannel = useRef(currentChannel);
+	const interval = useRef();
+
+	const colorScale = useMemo(
+		() => {
+			return scaleOrdinal({
+				range: ['#58c5c2', ...schemeAccent],
+				domain: ['total', ...organisations]
+			})},
+		[organisations]
+	);
+
+	useEffect(() => {
+		if (search && prevChannel.current !== currentChannel) {
+			if (interval.current !== undefined) clearInterval(interval.current);
+			interval.current = setInterval(() => {
+				this.searchTransactionList(currentChannel);
+			}, 60000);
+			return () => clearInterval(interval.current);
+		}
+	}, [currentChannel, search]);
+
 	useEffect(() => {
 		const tempOrganisations = [];
 		transactionByOrg.forEach(element =>
@@ -109,47 +164,17 @@ function TransactionsView({
 		setOrganisations(tempOrganisations);
 	}, [transactionByOrg]);
 
-	const colorScale = useMemo(
-		() => {
-			return scaleOrdinal({
-				range: ['#1c25d8', ...schemeAccent],
-				domain: ['total', ...organisations]
-			})},
-		[organisations]
-	);
-
-	const [displayedOrgs, setDisplayedOrgs] = useState([]);
-	useEffect(() => {
-		setDisplayedOrgs(organisations);
-	}, [organisations])
-	const handleDisplayedOrgsChanged = org => {
-		if (org === 'total') return;
-		const tempOrgs = [...displayedOrgs];
-		const index = tempOrgs.indexOf(org);
-		index > -1 ? tempOrgs.splice(index, 1) : tempOrgs.push(org);
-		setDisplayedOrgs(tempOrgs);
-	};
-
-	const [avgTrxSize, setAvgTrxSize] = useState(0);
-	const getAvgTransactionSize = () => {
-		let totalSize = 0;
-		let trxCount = 0;
-		if (!transactions) return 1;
-		transactions.forEach(trx => {
-			trxCount++;
-			totalSize += trx.size;
-		});
-		setAvgTrxSize(totalSize / trxCount);
-	};
-
-	const [transactions, setTransactions] = useState([]);
 	useEffect(() => {
 		search
 			? setTransactions(transactionListSearch)
 			: setTransactions(transactionList);
 	}, [transactionListSearch, transactionList]);
 
-	const [binnedTrx, setBinnedTrx] = useState([]);
+	useEffect(() => {
+		getAvgTransactionSize();
+		binTrx(transactions);
+	}, [transactions, msPerBin, binTrx]);
+
 	const binTrx = useCallback(() => {
 		let currentBinTime = Math.floor(from / msPerBin) * msPerBin;
 		let bins = [];
@@ -168,35 +193,26 @@ function TransactionsView({
 			bins.find(bin => bin.timestamp === trxBinTimeStamp)[transaction.creator_msp_id].push(transaction);
 		});
 		setBinnedTrx(bins);
-	}, [transactions, from, to, organisations]);
-	useEffect(() => {
-		binTrx(transactions);
-	}, [transactions, binTrx]);
+	}, [transactions, msPerBin, from, to, organisations]);
 
-	const [selection, setSelection] = useState(null);
-	useEffect(() => {
-		getAvgTransactionSize();
-		const currentSelection = {};
-		transactions.forEach(element => {
-			currentSelection[element.blocknum] = false;
+	const handleDisplayedOrgsChanged = org => {
+		if (org === 'total') return;
+		const tempOrgs = [...displayedOrgs];
+		const index = tempOrgs.indexOf(org);
+		index > -1 ? tempOrgs.splice(index, 1) : tempOrgs.push(org);
+		setDisplayedOrgs(tempOrgs);
+	};
+
+	const getAvgTransactionSize = () => {
+		let totalSize = 0;
+		let trxCount = 0;
+		if (!transactions) return 1;
+		transactions.forEach(trx => {
+			trxCount++;
+			totalSize += trx.size;
 		});
-		setSelection(currentSelection);
-	}, [transactions]);
-
-	const [filtered, setFiltered] = useState([]);
-	const [sorted, setSorted] = useState([]);
-	const [err, setErr] = useState(false);
-	const prevChannel = useRef(currentChannel);
-	const interval = useRef();
-	useEffect(() => {
-		if (search && prevChannel.current !== currentChannel) {
-			if (interval.current !== undefined) clearInterval(interval.current);
-			interval.current = setInterval(() => {
-				this.searchTransactionList(currentChannel);
-			}, 60000);
-			return () => clearInterval(interval.current);
-		}
-	}, [currentChannel, search]);
+		setAvgTrxSize(totalSize / trxCount);
+	};
 
 	const searchTransactionList = async channel => {
 		let query = `from=${new Date(from).toString()}&&to=${new Date(
@@ -209,7 +225,9 @@ function TransactionsView({
 		if (channel !== undefined) {
 			channelhash = channel;
 		}
+		setLoading(true);
 		await getTransactionListSearch(channelhash, query);
+		setLoading(false);
 	};
 
 	const handleSearch = async () => {
@@ -225,13 +243,9 @@ function TransactionsView({
 		setSearch(false);
 		setTo(moment());
 		setFrom(moment().subtract(1, 'days'));
-		setOrganisations([]);
 		setErr(false);
 	};
 
-	const [selectedTrx, setSelectedTrx] = useState([]);
-	const [selectedFrom, setSelectedFrom] = useState(from);
-	const [selectedTo, setSelectedTo] = useState(to);
 	const handleBrushSelection = (selectedBins) => {
 		const selection = [];
 		if(selectedBins.length < 1) {
@@ -318,39 +332,26 @@ function TransactionsView({
 								</MuiPickersUtilsProvider>
 							</Col>
 							<Col xs={2}>
-								<Button
-									className={classes.customButton}
-									color="success"
-									disabled={err}
-									onClick={async () => {
-										await handleSearch();
-									}}
-								>
-									<Search /> Search
-								</Button>
+								<div className={classes.wrapper}>
+									<Button
+										variant="contained"
+										className={classes.searchButton}
+										disabled={err || loading}
+										onClick={async () => {
+											await handleSearch();
+										}}
+									>
+										<Search /> Search
+									</Button>
+									{loading && <CircularProgress size={24} className={classes.buttonProgress}/>}
+								</div>
 							</Col>
-							<Col xs={1}>
-								<Button
-									onClick={() => {
-										handleClearSearch();
-									}}
-									className={classes.customButton}
-									color="primary"
-								>
-									Reset
-								</Button>
-							</Col>
-							<Col xs={1}>
-								<Button
-									onClick={() => {
-										setFiltered([]);
-										setSorted([]);
-									}}
-									color="secondary"
-									className={classes.customButton}
-								>
-									Clear
-								</Button>
+							<Col xs={2}>
+								<ButtonGroup className={classes.wrapper}>
+									<Button variant='contained' className={msPerBin===3600000 ? classes.activeBinMs : classes.inactiveBinMs} onClick={() => setMsPerBin(3600000)}>1 hour</Button>
+									<Button variant='contained' className={msPerBin===43200000 ? classes.activeBinMs : classes.inactiveBinMs} onClick={() => setMsPerBin(43200000)}>12 hours</Button>
+									<Button variant='contained' className={msPerBin===86400000 ? classes.activeBinMs : classes.inactiveBinMs} onClick={() => setMsPerBin(86400000)}>1 day</Button>
+								</ButtonGroup>
 							</Col>
 						</Row>
 					</CardContent>
@@ -439,9 +440,9 @@ function TransactionsView({
 TransactionsView.propTypes = {
 	currentChannel: currentChannelType.isRequired,
 	getTransaction: getTransactionType.isRequired,
-	getTransactionInfo: getTransactionInfoType.isRequired,
-	getTransactionList: getTransactionListType.isRequired,
-	transaction: transactionType.isRequired,
+	getTransactionInfo: getTransactionInfoType,
+	getTransactionList: getTransactionListType,
+	transaction: transactionType,
 	transactionList: transactionListType.isRequired
 };
 
