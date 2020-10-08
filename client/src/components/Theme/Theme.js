@@ -39,6 +39,65 @@ class Theme extends Component {
 
   getTheme(mode) {
     return createMuiTheme({
+			overrides: {
+				MuiPickersToolbar: {
+					toolbar: {
+						backgroundColor: '#58c5c2',
+					},
+				},
+				MuiPickersCalendarHeader: {
+					switchHeader: {
+						// backgroundColor: lightBlue.A200,
+						// color: "white",
+					},
+				},
+				MuiTabs: {
+					scroller: {
+						backgroundColor: '#58c5c2',
+					},
+					tabs: {
+						'&:active': {
+							backgroundColor: '#58c5c2',
+						}
+					}
+				},
+				MuiPickersClockPointer: {
+					pointer: {
+						backgroundColor: '#58c5c2',
+					},
+					noPoint: {
+						backgroundColor: '#58c5c2',
+					},
+					thumb: {
+						backgroundColor: '#58c5c2',
+						border: '14px solid #58c5c2;',
+					},
+				},
+				MuiPickersClock: {
+					pin: {
+						backgroundColor: '#58c5c2',
+					},
+				},
+				MuiPickersDay: {
+					daySelected: {
+						backgroundColor: '#58c5c2',
+						'&:hover': {
+							backgroundColor: '#419996'
+						}
+					},
+					dayDisabled: {
+						// color: lightBlue["100"],
+					},
+					current: {
+						color: '#453e68',
+					},
+				},
+				MuiPickersModal: {
+					dialogAction: {
+						color: '#3c3558',
+					},
+				},
+			},
       palette: {
         contrastThreshold: 3,
         tonalOffset: 0.2,

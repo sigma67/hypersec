@@ -5,6 +5,7 @@ import { AreaClosed } from '@visx/shape';
 import { curveMonotoneX } from '@visx/curve';
 import { Group } from '@visx/group';
 import { max } from 'd3';
+import { Grid } from '@visx/grid';
 import { timeParse, timeFormat } from 'd3-time-format';
 
 /**
@@ -54,6 +55,17 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 		<React.Fragment>
 			<svg width={parentWidth} height={parentHeight}>
 				<g transform={`translate(${margin.left}, ${margin.top})`}>
+					<Grid
+						xScale={timeScale}
+						yScale={countScale}
+						width={parentWidth}
+						height={height}
+						numTicksRows={4}
+						numTicksColumns={width > 520 ? 8 : 5}
+						strokeDasharray="3,3"
+						stroke="#919191"
+						strokeOpacity={0.3}
+					/>
 					<Group>
 
 					</Group>

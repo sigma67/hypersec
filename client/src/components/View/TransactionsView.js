@@ -288,6 +288,7 @@ function TransactionsView({
 								<MuiPickersUtilsProvider utils={MomentUtils}>
 									<DateTimePicker
 										label="From"
+										variant="inline"
 										value={from}
 										format="LLL"
 										style={{ width: 100 + '%' }}
@@ -316,6 +317,7 @@ function TransactionsView({
 								<MuiPickersUtilsProvider utils={MomentUtils}>
 									<DateTimePicker
 										label="To"
+										variant="inline"
 										value={to}
 										format="LLL"
 										style={{ width: 100 + '%' }}
