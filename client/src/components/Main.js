@@ -14,7 +14,7 @@ import ChaincodeView from './View/ChaincodeView';
 import DashboardView from './View/DashboardView';
 import ChannelsView from './View/ChannelsView';
 import SecurityView from './View/SecurityView/SecurityView';
-import { chartSelectors } from '../state/redux/charts';
+import { chartOperations, chartSelectors } from '../state/redux/charts';
 import { tableOperations, tableSelectors } from '../state/redux/tables';
 import {
 	blockListType,
@@ -81,7 +81,8 @@ export const Main = props => {
 		blockListSearch,
 		transactionListSearch,
 		getBlockListSearch,
-		getTransactionListSearch
+		getTransactionListSearch,
+		getMetrics
 	} = props;
 
 	const blocksViewProps = {
@@ -120,7 +121,8 @@ export const Main = props => {
 		getTransaction,
 		transactionByOrg,
 		transactionListSearch,
-		getTransactionListSearch
+		getTransactionListSearch,
+		getMetrics
 	};
 
 	const securityViewProps = {};
@@ -216,12 +218,13 @@ export default compose(
 			transactionList: transactionListSelector(state),
 			blockListSearch: blockListSearchSelector(state),
 			transactionListSearch: transactionListSearchSelector(state),
-			blockActivity: blockActivitySelector(state)
+			blockActivity: blockActivitySelector(state),
 		}),
 		{
 			getTransaction: tableOperations.transaction,
 			getBlockListSearch: tableOperations.blockListSearch,
-			getTransactionListSearch: tableOperations.transactionListSearch
+			getTransactionListSearch: tableOperations.transactionListSearch,
+			getMetrics: chartOperations.metrics
 		}
 	)
 )(Main);

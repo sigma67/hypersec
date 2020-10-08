@@ -231,6 +231,27 @@ const transactionPerMin = channel => dispatch =>
 			console.error(error);
 		});
 
+const metrics = (query, start, end, step) => dispatch =>
+	get(`/api/metrics/query_range?query=${query}&start=${start}&end=${end}&step=${step}`)
+		.then(resp => {
+			console.log(query)
+			console.log(resp.data.result)
+			if (resp.status === 500) {
+				dispatch(
+					actions.getErroMessage(
+						'500 Internal Server Error: The server has encountered an internal error and unable to complete your request'
+					)
+				);
+			} else if (resp.status === 400) {
+				dispatch(actions.getErroMessage(resp.error));
+			} else {
+				dispatch(actions.getMetrics(resp));
+			}
+		})
+		.catch(error => {
+			console.error(error);
+		});
+
 export default {
 	blockPerHour,
 	blockPerMin,
@@ -243,5 +264,6 @@ export default {
 	channelList,
 	changeChannel,
 	peerStatus,
-	blockActivity
+	blockActivity,
+	metrics
 };
