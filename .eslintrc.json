@@ -444,7 +444,9 @@
 					"userdataservice",
 					"parens",
 					"prometheus",
-					"dockerode"
+					"dockerode",
+					"enqueue",
+					"txprocessing"
 				],
 				"skipIfMatch": ["http://[^s]*", "[a-z]scc"],
 				"skipWordIfMatch": ["^foobar.*$"],
