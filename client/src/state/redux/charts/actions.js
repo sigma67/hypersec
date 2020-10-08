@@ -68,7 +68,7 @@ const updateChannel = channel => ({
 
 const getMetrics = metrics => ({
 		type: types.METRICS,
-		payload: { metrics },
+		payload: metrics,
 })
 
 export default {
@@ -85,5 +85,5 @@ export default {
   updateChannel,
   getErroMessage,
   getBlockActivity,
-	 getMetrics
+	getMetrics
 };

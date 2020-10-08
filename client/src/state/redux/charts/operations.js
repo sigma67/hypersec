@@ -234,8 +234,6 @@ const transactionPerMin = channel => dispatch =>
 const metrics = (query, start, end, step) => dispatch =>
 	get(`/api/metrics/query_range?query=${query}&start=${start}&end=${end}&step=${step}`)
 		.then(resp => {
-			console.log(query)
-			console.log(resp.data.result)
 			if (resp.status === 500) {
 				dispatch(
 					actions.getErroMessage(

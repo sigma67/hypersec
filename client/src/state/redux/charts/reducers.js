@@ -174,6 +174,21 @@ const transactionPerMinReducer = (state = initialState, action) => {
   }
 };
 
+const metricsReducer = ( state = initialState, action ) => {
+	switch (action.type) {
+		case types.METRICS: {
+			return {
+				rows: action.payload.data.result,
+				loaded: true,
+				errors: action.errors,
+			};
+		}
+		default: {
+			return state;
+		}
+	}
+};
+
 const reducer = combineReducers({
   blockPerHour: blockPerHourReducer,
   blockPerMin: blockPerMinReducer,
@@ -186,7 +201,8 @@ const reducer = combineReducers({
   transactionPerHour: transactionPerHourReducer,
   transactionPerMin: transactionPerMinReducer,
   errorMessage: errorMessageReducer,
-  blockActivity: blockActivityReducer,
+	blockActivity: blockActivityReducer,
+	metrics: metricsReducer,
 });
 
 export default reducer;

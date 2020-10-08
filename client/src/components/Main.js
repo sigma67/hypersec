@@ -39,7 +39,8 @@ const {
 	channelListSelector,
 	dashStatsSelector,
 	peerStatusSelector,
-	transactionByOrgSelector
+	transactionByOrgSelector,
+	metricSelector,
 } = chartSelectors;
 
 const {
@@ -82,7 +83,8 @@ export const Main = props => {
 		transactionListSearch,
 		getBlockListSearch,
 		getTransactionListSearch,
-		getMetrics
+		getMetrics,
+		metrics,
 	} = props;
 
 	const blocksViewProps = {
@@ -122,7 +124,8 @@ export const Main = props => {
 		transactionByOrg,
 		transactionListSearch,
 		getTransactionListSearch,
-		getMetrics
+		getMetrics,
+		metrics,
 	};
 
 	const securityViewProps = {};
@@ -218,6 +221,7 @@ export default compose(
 			transactionList: transactionListSelector(state),
 			blockListSearch: blockListSearchSelector(state),
 			transactionListSearch: transactionListSearchSelector(state),
+			metrics: metricSelector(state),
 			blockActivity: blockActivitySelector(state),
 		}),
 		{

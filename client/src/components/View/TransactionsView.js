@@ -38,7 +38,8 @@ import {
 	getTransactionInfoType,
 	getTransactionListType,
 	transactionType,
-	transactionListType
+	transactionListType,
+	getMetricsType
 } from '../types';
 
 /* istanbul ignore next */
@@ -72,7 +73,10 @@ const useStyles = makeStyles(theme => ({
 	searchButton: {
 		backgroundColor: '#58c5c2',
 		color: '#ffffff',
-		width: '100%'
+		width: '100%',
+		'&:hover': {
+			backgroundColor: '#419996'
+		}
 	},
 	brushRow: {
 		marginBottom: '4rem',
@@ -98,10 +102,13 @@ const useStyles = makeStyles(theme => ({
 	},
 	activeBinMs: {
 		color: '#ffffff',
-		backgroundColor: '#58c5c2'
+		backgroundColor: '#58c5c2',
+		'&:hover': {
+			backgroundColor: '#419996'
+		}
 	},
 	inactiveBinMs: {
-		backgroundColor: 'ffffff'
+		backgroundColor: 'ffffff',
 	}
 }));
 
@@ -110,7 +117,8 @@ function TransactionsView({
 	getTransaction,
 	getTransactionInfo,
 	getTransactionList,
- getMetrics,
+	 getMetrics,
+	 metrics,
 	transaction,
 	transactionList,
 	getTransactionListSearch,
@@ -215,7 +223,18 @@ function TransactionsView({
 		setAvgTrxSize(totalSize / trxCount);
 	};
 
+	useEffect(() => {
+		console.log(metrics);
+	}, [metrics]);
+
 	const searchTransactionList = async channel => {
+		await getMetrics(
+			"rate(endorser_proposal_duration_sum[5m])/rate(endorser_proposal_duration_count[5m])",
+			from / 1000,
+			to / 1000,
+			84
+		);
+
 		let query = `from=${new Date(from).toString()}&&to=${new Date(
 			to
 		).toString()}`;
@@ -237,14 +256,6 @@ function TransactionsView({
 			searchTransactionList();
 		}, 60000);
 		await searchTransactionList();
-		const now = Date.now()/1000;
-		let metrics = await getMetrics(
-			"rate(endorser_proposal_duration_sum[5m])/rate(endorser_proposal_duration_count[5m])",
-			now - 3600,
-			now,
-			84
-		)
-		console.log(metrics)
 		setSearch(true);
 	};
 
@@ -454,7 +465,8 @@ TransactionsView.propTypes = {
 	getTransactionInfo: getTransactionInfoType,
 	getTransactionList: getTransactionListType,
 	transaction: transactionType,
-	transactionList: transactionListType.isRequired
+	transactionList: transactionListType.isRequired,
+	getMetrics: getMetricsType,
 };
 
 export default TransactionsView;

@@ -112,6 +112,7 @@ export const getTransactionType = func;
 export const getTransactionByOrgType = func;
 export const getTransactionPerHourType = func;
 export const getTransactionPerMinType = func;
+export const getMetricsType = func;
 
 export const notificationsType = arrayOf(
 	shape({
