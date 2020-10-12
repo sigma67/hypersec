@@ -1,7 +1,7 @@
 /**
  *    SPDX-License-Identifier: Apache-2.0
  */
-
+import agent from 'superagent';
 import actions from './actions';
 import { get } from '../../../services/request';
 
@@ -231,8 +231,16 @@ const transactionPerMin = channel => dispatch =>
 			console.error(error);
 		});
 
-const metrics = (query, start, end, step) => dispatch =>
-	get(`/api/metrics/query_range?query=${query}&start=${start}&end=${end}&step=${step}`)
+const metrics = (query, start, end) => async (dispatch) => {
+
+	const prometheusRuntimeInfoRequest = await agent
+		.get('http://132.199.122.14:9090/api/v1/status/runtimeinfo')
+		.set('Accept', 'application/json');
+	const prometheusRuntimeInfo = prometheusRuntimeInfoRequest.body.data;
+	const prometheusStartTime = new Date(prometheusRuntimeInfo.startTime).getTime();
+	const stepSize = Math.ceil((end - (start < prometheusStartTime ? start : prometheusStartTime)) / 11000);
+	const query = `start=${start < prometheusStartTime ? start : prometheusStartTime}&end=${end}&step=${stepSize}`;
+	return get(`/api/charts/txprocessing?${query}`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
@@ -248,7 +256,8 @@ const metrics = (query, start, end, step) => dispatch =>
 		})
 		.catch(error => {
 			console.error(error);
-		});
+		})
+	};
 
 export default {
 	blockPerHour,

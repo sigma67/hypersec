@@ -178,7 +178,7 @@ const metricsReducer = ( state = initialState, action ) => {
 	switch (action.type) {
 		case types.METRICS: {
 			return {
-				rows: action.payload.data.result,
+				rows: action.payload,
 				loaded: true,
 				errors: action.errors,
 			};
