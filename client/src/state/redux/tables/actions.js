@@ -42,6 +42,11 @@ const getTransactionListSearch = transactionList => ({
   payload: transactionList,
 });
 
+const getLogs = logs => ({
+	type: types.LOGS,
+	payload: logs
+});
+
 export default {
   getBlockList,
   getChaincodeList,
@@ -51,4 +56,5 @@ export default {
   getTransactionList,
   getBlockListSearch,
   getTransactionListSearch,
+	 getLogs
 };

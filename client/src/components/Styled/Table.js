@@ -22,7 +22,8 @@ const styles = theme => {
 				overflow: 'scroll !important'
 			},
 			'& .rt-tr-group .rt-tr': {
-				paddingTop: 30
+				paddingTop: 5,
+				paddingBottom: 5
 			},
 			'& .rt-td': {
 				textAlign: 'center'
@@ -30,7 +31,7 @@ const styles = theme => {
 			'& .rt-th input': {
 				background: dark ? '#7165ad !important' : undefined,
 				color: dark ? '#ffffff' : undefined
-			}
+			},
 		},
 		list: {
 			'& ::-webkit-scrollbar': {
@@ -64,14 +65,19 @@ const Table = props => {
 	const clazz = classnames(
 		classes.table,
 		'-striped -highlight',
-		className,
-		list && classes.list
+		className
 	);
 	return (
 		<ReactTable
 			className={clazz}
 			{...rest}
 			getPaginationProps={() => ({ className: classes.pagination })}
+			// getTheadThProps={(state, rowInfo, column, instance) => ({
+			// 	width: column.stretch ? "100%" : ""
+			// })}
+			// getTdProps={(state, rowInfo, column, instance) => ({
+			// 	width: column.stretch ? "100%" : ""
+			// })}
 		/>
 	);
 };
