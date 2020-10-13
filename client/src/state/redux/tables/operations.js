@@ -142,6 +142,27 @@ const transactionList = channel => dispatch =>
 		.catch(error => {
 			console.error(error);
 		});
+
+const logs = peer => dispatch =>
+	get(`/api/logs/${peer}`)
+		.then(resp => {
+			console.log(resp);
+			if (resp.status === 500) {
+				dispatch(
+					actions.getErroMessage(
+						'500 Internal Server Error: The server has encountered an internal error and unable to complete your request'
+					)
+				);
+			} else if (resp.status === 400) {
+				dispatch(actions.getErroMessage(resp.error));
+			} else {
+				dispatch(actions.getLogs(resp));
+			}
+		})
+		.catch(error => {
+			console.error(error);
+		});
+
 export default {
 	blockList,
 	chaincodeList,
@@ -150,5 +171,6 @@ export default {
 	transaction,
 	transactionList,
 	transactionListSearch,
-	blockListSearch
+	blockListSearch,
+	logs
 };
