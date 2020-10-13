@@ -252,7 +252,6 @@ function TransactionsView({
 		setLoading(true);
 		await searchTransactionList();
 		await getMetrics(
-			"rate(endorser_proposal_duration_sum[5m])/rate(endorser_proposal_duration_count[5m])",
 			start / 1000,
 			end / 1000
 		);
