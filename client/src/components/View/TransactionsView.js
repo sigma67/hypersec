@@ -5,11 +5,9 @@
 import React, {
 	useState,
 	useEffect,
-	useRef,
 	useMemo,
 	useCallback
 } from 'react';
-import View from '../Styled/View';
 import { makeStyles  } from '@material-ui/core/styles';
 import moment from 'moment';
 import MomentUtils from '@date-io/moment';
@@ -20,17 +18,20 @@ import TransactionTime from '../Charts/TransactionTime';
 import { schemeAccent } from 'd3-scale-chromatic';
 import { scaleOrdinal } from '@visx/scale';
 import { Row, Col } from 'reactstrap';
-import ButtonGroup from '@material-ui/core/ButtonGroup';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
 import {
-	Button,
 	IconButton,
 	InputAdornment,
 	Card,
 	CardContent,
-	CircularProgress
+	InputLabel,
+	MenuItem,
+	FormControl,
+	Select,
+	CircularProgress,
+	Backdrop
 } from '@material-ui/core';
-import { Event, Today, Search } from '@material-ui/icons';
+import { Event, Today } from '@material-ui/icons';
 import { DateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers';
 import {
 	currentChannelType,
@@ -44,6 +45,10 @@ import {
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
+	backdrop: {
+    zIndex: theme.zIndex.drawer + 1,
+    color: '#fff',
+  },
 	view: {
 		paddingTop: 85,
 		paddingLeft: 0,
@@ -58,7 +63,7 @@ const useStyles = makeStyles(theme => ({
 	},
 	smallSection: {
 		marginBottom: '1%',
-		textAlign: 'center',
+/* 		textAlign: 'center', */
 		color: theme.palette === 'dark' ? '#ffffff' : undefined,
 		backgroundColor: theme.palette === 'dark' ? '#3c3558' : undefined
 	},
@@ -79,13 +84,16 @@ const useStyles = makeStyles(theme => ({
 		}
 	},
 	brushRow: {
-		marginBottom: '4rem',
+		marginBottom: '3rem',
 		marginTop: '.5rem'
 	},
 	brushCol: {
 		display: 'flex',
 		flex: 1,
 		height: '10rem'
+	},
+	detailsRow: {
+		marginBottom: '.5rem'
 	},
 	wrapper: {
 		marginTop: '10px',
@@ -115,10 +123,8 @@ const useStyles = makeStyles(theme => ({
 function TransactionsView({
 	currentChannel,
 	getTransaction,
-	getTransactionInfo,
-	getTransactionList,
-	 getMetrics,
-	 metrics,
+	getMetrics,
+	metrics,
 	transaction,
 	transactionList,
 	getTransactionListSearch,
@@ -126,25 +132,23 @@ function TransactionsView({
 	transactionListSearch
 }) {
 	const classes = useStyles();
-	const [search, setSearch] = useState(false);
-	const [to, setTo] = useState(moment());
-	const [from, setFrom] = useState(moment().subtract(1, 'days'));
+	const [end, setEnd] = useState(moment());
+	const [start, setStart] = useState(moment().subtract(1, 'days'));
+	const [loading, setLoading] = useState(false);
 	const [transactions, setTransactions] = useState([]);
 	const [binnedTrx, setBinnedTrx] = useState([]);
 	const [organisations, setOrganisations] = useState([]);
-	const [displayedOrgs, setDisplayedOrgs] = useState([...organisations]);
+	const [displayedOrgs, setDisplayedOrgs] = useState([]);
 	const [msPerBin, setMsPerBin] = useState(3600000);
 	const [avgTrxSize, setAvgTrxSize] = useState(0);
 	const [filtered, setFiltered] = useState([]);
 	const [sorted, setSorted] = useState([]);
 	const [err, setErr] = useState(false);
-	const [loading, setLoading] = useState(false);
 	const [selectedTrx, setSelectedTrx] = useState([]);
-	const [selectedFrom, setSelectedFrom] = useState(from);
-	const [selectedTo, setSelectedTo] = useState(to);
+	const [selectedMtrx, setSelectedMtrx] = useState([]);
+	const [selectedFrom, setSelectedFrom] = useState(start);
+	const [selectedTo, setSelectedTo] = useState(end);
 
-	const prevChannel = useRef(currentChannel);
-	const interval = useRef();
 
 	const colorScale = useMemo(
 		() => {
@@ -156,14 +160,9 @@ function TransactionsView({
 	);
 
 	useEffect(() => {
-		if (search && prevChannel.current !== currentChannel) {
-			if (interval.current !== undefined) clearInterval(interval.current);
-			interval.current = setInterval(() => {
-				this.searchTransactionList(currentChannel);
-			}, 60000);
-			return () => clearInterval(interval.current);
-		}
-	}, [currentChannel, search]);
+		async function fetchData() { await handleSearch(); }
+		fetchData();
+	}, [start, end])
 
 	useEffect(() => {
 		const tempOrganisations = [];
@@ -174,20 +173,33 @@ function TransactionsView({
 	}, [transactionByOrg]);
 
 	useEffect(() => {
-		search
-			? setTransactions(transactionListSearch)
-			: setTransactions(transactionList);
-	}, [transactionListSearch, transactionList]);
+		if (transactionListSearch) {
+			setTransactions(transactionListSearch);
+			setSelectedTrx(transactionListSearch);
+		} else {
+			setTransactions([]);
+		}
+	}, [transactionListSearch]);
+
+	useEffect(() => {
+		metrics ? setSelectedMtrx(metrics) : setSelectedMtrx([]);
+	}, [metrics]);
 
 	useEffect(() => {
 		getAvgTransactionSize();
 		binTrx(transactions);
 	}, [transactions, msPerBin, binTrx]);
 
+	useEffect(() => {
+		if(displayedOrgs.length === 0) { setDisplayedOrgs(organisations); }
+	}, [organisations]);
+
 	const binTrx = useCallback(() => {
-		let currentBinTime = Math.floor(from / msPerBin) * msPerBin;
+		const startBin = Math.floor(start.valueOf() / msPerBin) * msPerBin;
+		const endBin = Math.floor(end.valueOf() / msPerBin)* msPerBin;
+		let currentBinTime = Math.floor(start.valueOf() / msPerBin) * msPerBin;
 		let bins = [];
-		while (currentBinTime < to) {
+		while (currentBinTime < end) {
 			const bin = {timestamp: currentBinTime, total: []};
 			organisations.forEach(org => {
 				bin[org] = [];
@@ -196,13 +208,14 @@ function TransactionsView({
 			currentBinTime += msPerBin;
 		}
 		transactions.forEach((transaction) => {
-			const trxBinTimeStamp = new Date().setTime(Math.floor(new Date(transaction.createdt).getTime() / msPerBin) * msPerBin);
-			if (trxBinTimeStamp < from ||trxBinTimeStamp > to) return;
+			const trxBinTimeStamp = Math.floor(moment.utc(transaction.createdt).valueOf() / msPerBin) * msPerBin;
+			// console.log(trxBinTimeStamp < start.valueOf());
+			if (trxBinTimeStamp < startBin || trxBinTimeStamp > endBin) return;
 			bins.find(bin => bin.timestamp === trxBinTimeStamp)['total'].push(transaction);
 			bins.find(bin => bin.timestamp === trxBinTimeStamp)[transaction.creator_msp_id].push(transaction);
 		});
 		setBinnedTrx(bins);
-	}, [transactions, msPerBin, from, to, organisations]);
+	}, [transactions, msPerBin, start, end, organisations]);
 
 	const handleDisplayedOrgsChanged = org => {
 		if (org === 'total') return;
@@ -223,21 +236,8 @@ function TransactionsView({
 		setAvgTrxSize(totalSize / trxCount);
 	};
 
-	useEffect(() => {
-		console.log(metrics);
-	}, [metrics]);
-
 	const searchTransactionList = async channel => {
-		await getMetrics(
-			"rate(endorser_proposal_duration_sum[5m])/rate(endorser_proposal_duration_count[5m])",
-			from / 1000,
-			to / 1000,
-			84
-		);
-
-		let query = `from=${new Date(from).toString()}&&to=${new Date(
-			to
-		).toString()}`;
+		let query = `from=${start.toISOString()}&&to=${end.toISOString()}`;
 		for (let i = 0; i < organisations.length; i++) {
 			query += `&&orgs=${organisations[i]}`;
 		}
@@ -245,41 +245,49 @@ function TransactionsView({
 		if (channel !== undefined) {
 			channelhash = channel;
 		}
-		setLoading(true);
 		await getTransactionListSearch(channelhash, query);
-		setLoading(false);
 	};
 
 	const handleSearch = async () => {
-		if (interval.current !== undefined) clearInterval(interval.current);
-		interval.current = setInterval(() => {
-			searchTransactionList();
-		}, 60000);
+		setLoading(true);
 		await searchTransactionList();
-		setSearch(true);
+		await getMetrics(
+			"rate(endorser_proposal_duration_sum[5m])/rate(endorser_proposal_duration_count[5m])",
+			start / 1000,
+			end / 1000
+		);
+		setLoading(false);
 	};
 
 	const handleClearSearch = () => {
 		setSearch(false);
-		setTo(moment());
-		setFrom(moment().subtract(1, 'days'));
+		setEnd(moment());
+		setStart(moment().subtract(1, 'days'));
 		setErr(false);
 	};
 
 	const handleBrushSelection = (selectedBins) => {
-		const selection = [];
+		const trxSelection = [];
+		const mtrxSelection = [];
 		if(selectedBins.length < 1) {
-			setSelectedTrx(selection);
-			setSelectedFrom(from);
-			setSelectedTo(to);
+			setSelectedTrx(transactions);
+			setSelectedMtrx(metrics);
+			setSelectedFrom(start);
+			setSelectedTo(end);
 			return;
 		}
+		metrics.forEach(bin => {
+			if (selectedBins.indexOf( Math.floor((bin.time*1000) / msPerBin) * msPerBin) > -1) {
+				mtrxSelection.push(bin);
+			}
+		})
 		binnedTrx.forEach(bin => {
 			if (selectedBins.indexOf(bin.timestamp) > -1) {
-				selection.push(...bin.total);
+				trxSelection.push(...bin.total);
 			}
 		});
-		setSelectedTrx(selection);
+		setSelectedTrx(trxSelection);
+		setSelectedMtrx(mtrxSelection);
 		setSelectedFrom(selectedBins[0]);
 		setSelectedTo(
 			selectedBins[selectedBins.length - 1] ?
@@ -288,27 +296,36 @@ function TransactionsView({
 		);
 	};
 
+	const handleMsPerBinChange = (event) => {
+		setMsPerBin(event.target.value);
+	}
+
 	return (
 		<div className={classes.view}>
+		<Backdrop className={classes.backdrop} open={loading}>
+			<CircularProgress color="inherit" />
+		</Backdrop>
 		<Row>
 			<Col sm="12" className={classes.root}>
 				<Card className={`${classes.smallSection}`} variant="outlined">
 					<CardContent>
 						<Row>
-							<Col xs={4}>
+							<Col xs={5}>
 								<MuiPickersUtilsProvider utils={MomentUtils}>
 									<DateTimePicker
 										label="From"
-										variant="inline"
-										value={from}
+										value={start}
 										format="LLL"
 										style={{ width: 100 + '%' }}
-										onChange={date => {
-											if (date > to) {
+										onChange={async (date) => {
+											if (date > end) {
 												setErr(true);
-												setFrom(date);
+												setStart(date);
+												setSelectedFrom(date);
 											} else {
-												setFrom(date);
+												setStart(date);
+												setSelectedFrom(date);
+												await handleSearch();
 												setErr(false);
 											}
 										}}
@@ -324,20 +341,22 @@ function TransactionsView({
 									/>
 								</MuiPickersUtilsProvider>
 							</Col>
-							<Col xs={4}>
+							<Col xs={5}>
 								<MuiPickersUtilsProvider utils={MomentUtils}>
 									<DateTimePicker
 										label="To"
-										variant="inline"
-										value={to}
+										value={end}
 										format="LLL"
 										style={{ width: 100 + '%' }}
-										onChange={date => {
-											if (date < from) {
+										onChange={async (date) => {
+											if (date < start) {
 												setErr(true);
-												setTo(date);
+												setSelectedTo(date);
+												setEnd(date);
 											} else {
-												setTo(date);
+												setEnd(date);
+												setSelectedTo(date);
+												await handleSearch();
 												setErr(false);
 											}
 										}}
@@ -354,26 +373,20 @@ function TransactionsView({
 								</MuiPickersUtilsProvider>
 							</Col>
 							<Col xs={2}>
-								<div className={classes.wrapper}>
-									<Button
-										variant="contained"
-										className={classes.searchButton}
-										disabled={err || loading}
-										onClick={async () => {
-											await handleSearch();
-										}}
+								<FormControl style={{ width: 100 + '%' }}>
+									<InputLabel id="ms-per-bin-select-label">Transactions per</InputLabel>
+									<Select
+										labelId="ms-per-bin-select-label"
+										id="ms-per-bin-select"
+										value={msPerBin}
+										onChange={handleMsPerBinChange}
 									>
-										<Search /> Search
-									</Button>
-									{loading && <CircularProgress size={24} className={classes.buttonProgress}/>}
-								</div>
-							</Col>
-							<Col xs={2}>
-								<ButtonGroup className={classes.wrapper}>
-									<Button variant='contained' className={msPerBin===3600000 ? classes.activeBinMs : classes.inactiveBinMs} onClick={() => setMsPerBin(3600000)}>1 hour</Button>
-									<Button variant='contained' className={msPerBin===43200000 ? classes.activeBinMs : classes.inactiveBinMs} onClick={() => setMsPerBin(43200000)}>12 hours</Button>
-									<Button variant='contained' className={msPerBin===86400000 ? classes.activeBinMs : classes.inactiveBinMs} onClick={() => setMsPerBin(86400000)}>1 day</Button>
-								</ButtonGroup>
+										<MenuItem value={60000}>1 minute</MenuItem>
+										<MenuItem value={3600000}>1 hour</MenuItem>
+										<MenuItem value={43200000}>12 hours</MenuItem>
+										<MenuItem value={86400000}>24 hours</MenuItem>
+									</Select>
+								</FormControl>
 							</Col>
 						</Row>
 					</CardContent>
@@ -401,7 +414,7 @@ function TransactionsView({
 								</ParentSize>
 							</Col>
 						</Row>
-						<Row>
+						<Row className={classes.detailsRow}>
 							<Col sm="6" className={classes.brushCol}>
 								<ParentSize debounceTime={10}>
 									{({ width: visWidth, height: visHeight }) => (
@@ -414,6 +427,7 @@ function TransactionsView({
 											to={selectedTo}
 											avgTrxSize={avgTrxSize || 1}
 											displayedOrgs={displayedOrgs}
+											onDisplayedOrgsChange={handleDisplayedOrgsChanged}
 										/>
 									)}
 								</ParentSize>
@@ -424,7 +438,7 @@ function TransactionsView({
 										<TransactionTime
 											parentWidth={visWidth}
 											parentHeight={visHeight}
-											data={selectedTrx}
+											data={selectedMtrx}
 											from={selectedFrom}
 											to={selectedTo}
 										/>

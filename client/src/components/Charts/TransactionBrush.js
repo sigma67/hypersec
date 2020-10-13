@@ -17,8 +17,7 @@ const useStyles = makeStyles(theme => ({
 		lineHeight: '0.9em',
 		color: '#000',
 		fontSize: '11px',
-		paddingTop: '10px',
-		paddingBottom: '10px',
+		paddingBottom: '5px',
 		float: 'left',
 		marginLeft: '40px'
 	},
@@ -69,7 +68,7 @@ function TransactionBrush({
 			maxValue = 	bin.total.length > maxValue ? bin.total.length : maxValue;
 		});
 		setTotal(tempTotal);
-		setMaxTrxCount(maxValue);
+		setMaxTrxCount(maxValue + maxValue * 0.01);
 	}, [data]);
 
 	const barStackScale = useMemo(
@@ -219,16 +218,6 @@ function TransactionBrush({
 							strokeDasharray = {'9, 5'}
 							shapeRendering="geometricPrecision"
 						/>
-{/* 						{total.map(bin => (
-							<Circle
-								key = {`total-point-${bin.timestamp}`}
-								cx = { barStackScale(bin.timestamp) + barStackScale.bandwidth() / 2 }
-								cy = { countScale(bin.transactions.length) }
-								r = { 5 }
-								fill={ '#fff'	}
-								stroke = { colorScale('total') }
-							/>
-						))} */}
 					</Group>
 					<Group>
 						<PatternLines
@@ -260,11 +249,11 @@ function TransactionBrush({
 							fontSize: 11,
 							textAnchor: 'middle',
 						})}
-						numTicks={width > 520 ? 20 : 10}
+						numTicks={width > 1920 ? 20 : 10}
 					/>
 					<AxisLeft scale={countScale} numTicks={4} />
 					<text x="-30" y="10" transform="rotate(-90)" fontSize={10}>
-						Trx / h
+						# Trx
 					</text>
 				</g>
 			</svg>

@@ -238,7 +238,7 @@ const metrics = (query, start, end) => async (dispatch) => {
 		.set('Accept', 'application/json');
 	const prometheusRuntimeInfo = prometheusRuntimeInfoRequest.body.data;
 	const prometheusStartTime = new Date(prometheusRuntimeInfo.startTime).getTime();
-	const stepSize = Math.ceil((end - (start < prometheusStartTime ? start : prometheusStartTime)) / 11000);
+	const stepSize = Math.ceil((end - (start < prometheusStartTime ? start : prometheusStartTime)) / 1000);
 	const query = `start=${start < prometheusStartTime ? start : prometheusStartTime}&end=${end}&step=${stepSize}`;
 	return get(`/api/charts/txprocessing?${query}`)
 		.then(resp => {

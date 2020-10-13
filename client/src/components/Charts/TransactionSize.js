@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
 import { scaleTime, scaleLinear } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
 import { LinePath } from '@visx/shape';
@@ -7,12 +8,25 @@ import { Group } from '@visx/group';
 import { max } from 'd3';
 import { timeParse, timeFormat } from 'd3-time-format';
 import { Grid } from '@visx/grid';
+import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
+
+/* istanbul ignore next */
+const useStyles = makeStyles(theme => ({
+	legend: {
+		lineHeight: '0.9em',
+		color: '#000',
+		fontSize: '11px',
+		paddingTop: '5px',
+		paddingBottom: '5px',
+		float: 'left',
+		marginLeft: '40px'
+	},
+}));
 
 /**
  * Global constants
  */
 const margin = { top: 10, bottom: 30, left: 50, right: 30 };
-
 const parseDate = timeParse('%Q');
 const format = timeFormat('%b %d, %H:%M');
 const formatDate = (date) => format(parseDate(new Date(date).getTime()));
@@ -25,8 +39,11 @@ function TransactionSize({
 	from,
 	to,
 	avgTrxSize,
-	displayedOrgs
+	displayedOrgs,
+	onDisplayedOrgsChange
 }) {
+	const legendGlyphSize = 20;
+	const classes = useStyles();
 	const [width, setWidth] = useState(0);
 	useEffect(() => {
 		setWidth(parentWidth > 0 ? parentWidth - margin.left - margin.right : 0);
@@ -69,6 +86,47 @@ function TransactionSize({
 
 	return (
 		<React.Fragment>
+			<div className={classes.legend} style={{ cursor: 'pointer' }}>
+				<LegendOrdinal scale={colorScale}>
+					{labels => (
+						<div style={{ display: 'flex', flexDirection: 'row' }}>
+							{labels.map((label, i) => {
+								if (label.datum === 'total') return <div key={`legend-organisation-${label.datum}`}/>
+								return (
+									<LegendItem
+										key={`legend-organisation-${label.datum}`}
+										margin="0 5px"
+										onClick={() => {
+											onDisplayedOrgsChange(label.datum);
+										}}
+									>
+										<svg width={legendGlyphSize} height={legendGlyphSize}>
+										<line
+													stroke = {label.value}
+													strokeWidth = { 3 }
+													strokeDasharray = { displayedOrgs.indexOf(label.datum) > -1 ? '0' : '3, 3'	}
+													x1={0}
+													x2={legendGlyphSize}
+													y1={legendGlyphSize / 2}
+													y2={legendGlyphSize / 2}
+												/>
+										</svg>
+										<LegendLabel
+											align="left"
+											margin="0 0 0 4px"
+											onClick={() => {
+												onDisplayedOrgsChange(label.datum);
+											}}
+										>
+											{label.text}
+										</LegendLabel>
+									</LegendItem>
+								)
+							})}
+						</div>
+					)}
+				</LegendOrdinal>
+			</div>
 			<svg width={parentWidth} height={parentHeight}>
 				<g transform={`translate(${margin.left}, ${margin.top})`}>
 					<Grid

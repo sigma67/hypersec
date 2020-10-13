@@ -55,11 +55,6 @@ class Theme extends Component {
 					scroller: {
 						backgroundColor: '#58c5c2',
 					},
-					tabs: {
-						'&:active': {
-							backgroundColor: '#58c5c2',
-						}
-					}
 				},
 				MuiPickersClockPointer: {
 					pointer: {
@@ -90,11 +85,6 @@ class Theme extends Component {
 					},
 					current: {
 						color: '#453e68',
-					},
-				},
-				MuiPickersModal: {
-					dialogAction: {
-						color: '#3c3558',
 					},
 				},
 			},
