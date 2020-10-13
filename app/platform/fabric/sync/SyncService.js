@@ -543,7 +543,7 @@ class SyncServices {
 				}
 				/* eslint-disable */
 				const creator_id_bytes =
-					txObj.payload.header.signature_header.creator.IdBytes;
+					txObj.payload.header.signature_header.creator.id_bytes;
 				if (txObj.payload.data.actions !== undefined) {
 					chaincode =
 						txObj.payload.data.actions[0].payload.action.proposal_response_payload
