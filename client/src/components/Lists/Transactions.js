@@ -3,15 +3,12 @@
  */
 /* eslint-disable */
 import React, { useState } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
 import ReactTable from '../Styled/Table';
 import matchSorter from 'match-sorter';
 import TransactionView from '../View/TransactionView';
 
-const useStyles = makeStyles(theme => ({
-
-}));
+const getSender = (d, e) => d.sender ? d.sender.commonName : 'NaN';
 
 function Transactions({
 	data,
@@ -20,7 +17,6 @@ function Transactions({
 	transaction,
 	getTransaction,
 }) {
-	const classes = useStyles();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [filtered, setFiltered] = useState([]);
 	const [sorted, setSorted] = useState([]);
@@ -52,16 +48,16 @@ function Transactions({
 		{
 			Header: 'Tx Id',
 			accessor: 'txhash',
-			className: classes.hash,
+			// className: classes.hash,
 			Cell: row => (
 				<span>
 					<a
 						data-command="transaction-partial-hash"
-						className={classes.partialHash}
+					// 	className={classes.partialHash}
 						onClick={() => handleDialogOpen(row.value)}
 						href="#/transactions"
 					>
-						<div className={classes.fullHash} id="showTransactionId">
+						<div id="showTransactionId">
 							{row.value}
 						</div>{' '}
 						{row.value.slice(0, 6)}
@@ -110,6 +106,19 @@ function Transactions({
 					rows,
 					filter.value,
 					{ keys: ['createdt'] },
+					{ threshold: matchSorter.rankings.SIMPLEMATCH }
+				),
+			filterAll: true
+		},
+		{
+			Header: 'Sender',
+			id: 'sender',
+			accessor: getSender,
+		 	filterMethod: (filter, rows) =>
+				matchSorter(
+					rows,
+					filter.value,
+					{ keys: ['sender'] },
 					{ threshold: matchSorter.rankings.SIMPLEMATCH }
 				),
 			filterAll: true
