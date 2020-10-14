@@ -231,15 +231,8 @@ const transactionPerMin = channel => dispatch =>
 			console.error(error);
 		});
 
-const metrics = (query, start, end) => async (dispatch) => {
-
-	const prometheusRuntimeInfoRequest = await agent
-		.get('http://132.199.122.14:9090/api/v1/status/runtimeinfo')
-		.set('Accept', 'application/json');
-	const prometheusRuntimeInfo = prometheusRuntimeInfoRequest.body.data;
-	const prometheusStartTime = new Date(prometheusRuntimeInfo.startTime).getTime();
-	const stepSize = Math.ceil((end - (start < prometheusStartTime ? start : prometheusStartTime)) / 1000);
-	const query = `start=${start < prometheusStartTime ? start : prometheusStartTime}&end=${end}&step=${stepSize}`;
+const metrics = (start, end) => async (dispatch) => {
+	const query = `start=${start}&end=${end}`;
 	return get(`/api/charts/txprocessing?${query}`)
 		.then(resp => {
 			if (resp.status === 500) {
