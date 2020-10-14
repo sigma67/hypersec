@@ -4,11 +4,10 @@
 
 const requtil = require('./requestutils.js');
 const helper = require('../common/helper');
-
+const x509 = require('@ampretia/x509')
 const logger = helper.getLogger('dbroutes');
 
-/**
- *
+/***
  *
  * @param {*} router
  * @param {*} platform
@@ -148,6 +147,13 @@ const dbroutes = (router, platform) => {
 						chaincode
 					)
 					.then(rows => {
+						for(let i = 0; i < rows.length; i++){
+							try{
+								rows[i].sender = x509.getSubject(rows[i].creator_id_bytes);
+								delete rows[i].creator_id_bytes;
+							}
+							catch(err){}
+						}
 						if (rows) {
 							return res.send({ status: 200, rows });
 						}

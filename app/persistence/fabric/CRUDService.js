@@ -86,7 +86,7 @@ class CRUDService {
 		orgs,
 		chaincode
 	) {
-		let sqlTxList = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName, t.size from transactions as t
+		let sqlTxList = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName, t.size, t.creator_id_bytes from transactions as t
        inner join channel on t.channel_genesis_hash=channel.channel_genesis_hash and t.network_name = channel.network_name where  t.blockid >= ${blockNum} and t.id >= ${txid} and
 							t.channel_genesis_hash = '${channel_genesis_hash}' and t.network_name = '${network_name}' and t.createdt between '${from}' and '${to}' `;
 
