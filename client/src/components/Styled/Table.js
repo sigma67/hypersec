@@ -22,8 +22,8 @@ const styles = theme => {
 				overflow: 'scroll !important'
 			},
 			'& .rt-tr-group .rt-tr': {
-				paddingTop: 5,
-				paddingBottom: 5
+/* 				paddingTop: 5,
+				paddingBottom: 5 */
 			},
 			'& .rt-td': {
 				textAlign: 'center'

@@ -84,7 +84,7 @@ const useStyles = makeStyles(theme => ({
 		}
 	},
 	brushRow: {
-		marginBottom: '3rem',
+		marginBottom: '4rem',
 		marginTop: '.5rem'
 	},
 	brushCol: {

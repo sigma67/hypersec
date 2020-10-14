@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
+import Grid from '@material-ui/core/Grid';
+import Typography from '@material-ui/core/Typography';
+import Box from '@material-ui/core/Box';
 import { scaleLinear, scaleBand } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
-import { LinePath, BarStack } from '@visx/shape';
+import { LinePath, BarStack, AreaStack } from '@visx/shape';
 import { Group } from '@visx/group';
 import { Brush } from '@visx/brush';
 import { PatternLines } from '@visx/pattern';
-import { curveMonotoneX } from '@visx/curve';
+import { curveStepAfter, curveMonotoneX } from '@visx/curve';
 import { GridRows } from '@visx/grid';
-import { timeParse, timeFormat } from 'd3-time-format';
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
+import { timeParse, timeFormat } from 'd3-time-format';
+
+
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
@@ -17,16 +22,17 @@ const useStyles = makeStyles(theme => ({
 		lineHeight: '0.9em',
 		color: '#000',
 		fontSize: '11px',
-		paddingBottom: '5px',
-		float: 'left',
-		marginLeft: '40px'
+		float: 'right',
+		marginLeft: '40px',
+		cursor: 'pointer',
+		height: '100%',
+		display: 'flex'
 	},
 }));
-
 /**
  * Global constants
  */
-const margin = { top: 10, bottom: 30, left: 40, right: 0 };
+const margin = { top: 5, bottom: 30, left: 30, right: 10 };
 const PATTERN_ID = 'brush_pattern';
 // const selectedBrushStyle = { fill: `url(#${PATTERN_ID})`, stroke: 'white' };
 const selectedBrushStyle = { fill: '#919191', opacity: .5, stroke: 'white' }
@@ -45,7 +51,7 @@ function TransactionBrush({
 	displayedOrgs,
 	onDisplayedOrgsChange
 }) {
-	const legendGlyphSize = 20;
+	const legendGlyphSize = 15;
 	const classes = useStyles();
 	const [width, setWidth] = useState(0);
 	useEffect(() => {
@@ -76,7 +82,7 @@ function TransactionBrush({
 			scaleBand({
 				range: [0, width],
 				domain: data.map(d => getDate(d)),
-				padding: 0.4
+				// padding: 0.4
 			}),
 		[width, data]
 	);
@@ -100,74 +106,85 @@ function TransactionBrush({
 
 	return (
 		<React.Fragment>
-			<div className={classes.legend} style={{ cursor: 'pointer' }}>
-				<LegendOrdinal scale={colorScale}>
-					{labels => (
-						<div style={{ display: 'flex', flexDirection: 'row' }}>
-							{labels.map((label, i) => {
-								if(label.datum === 'total') {
-									return (
-										<LegendItem
-											key = {`brush-legend-total`}
-											margin = "0 5px"
-										>
-											<svg width = { legendGlyphSize } height = { legendGlyphSize }>
-												<line
-													stroke = {label.value}
-													strokeWidth = { 2 }
-													strokeDasharray = {'5, 5'}
-													x1={0}
-													x2={legendGlyphSize}
-													y1={legendGlyphSize / 2}
-													y2={legendGlyphSize / 2}
-												/>
-											</svg>
-											<LegendLabel
-												align="left"
-												margin="0 0 0 4px"
-											>
-												{label.text}
-											</LegendLabel>
-										</LegendItem>
-									)
-								}	else {
-									return (
-										<LegendItem
-											key={`legend-organisation-${label.datum}`}
-											margin="0 5px"
-											onClick={() => {
-												onDisplayedOrgsChange(label.datum);
-											}}
-										>
-											<svg width={legendGlyphSize} height={legendGlyphSize}>
-											<rect
-												key={`legend-organisation-${label.datum}`}
-												x = { 0 }
-												y = { 0 }
-												height = {legendGlyphSize }
-												width = { legendGlyphSize }
-												strokeWidth = { 2 }
-												stroke={ label.value }
-												fill={ displayedOrgs.indexOf(label.datum) > -1 ? label.value : '#fff'	}
-												/>
-											</svg>
-											<LegendLabel
-												align="left"
-												margin="0 0 0 4px"
-												onClick={() => {
-													onDisplayedOrgsChange(label.datum);
-												}}
-											>
-												{label.text}
-											</LegendLabel>
-										</LegendItem>
-									)
-								}
-							})}
-						</div>
-					)}
-				</LegendOrdinal>
-			</div>
+			<Grid container>
+				<Grid item xs={4}>
+					<Typography component='div'>
+						<Box m={1}>
+							Number of Transactions
+						</Box>
+					</Typography>
+				</Grid>
+				<Grid item xs={8}>
+					<div className={classes.legend}>
+						<LegendOrdinal scale={colorScale}>
+							{labels => (
+								<div style={{ display: 'flex', flexDirection: 'row' }}>
+									{labels.map((label, i) => {
+										if(label.datum === 'total') {
+											return (
+												<LegendItem
+													key = {`brush-legend-total`}
+													margin = "0 5px"
+												>
+													<svg width = { legendGlyphSize } height = { legendGlyphSize }>
+														<line
+															stroke = {label.value}
+															strokeWidth = { 2 }
+															strokeDasharray = {'5, 5'}
+															x1={0}
+															x2={legendGlyphSize}
+															y1={legendGlyphSize / 2}
+															y2={legendGlyphSize / 2}
+														/>
+													</svg>
+													<LegendLabel
+														align="left"
+														margin="0 0 0 4px"
+													>
+														{label.text}
+													</LegendLabel>
+												</LegendItem>
+											)
+										}	else {
+											return (
+												<LegendItem
+													key={`legend-organisation-${label.datum}`}
+													margin="0 5px"
+													onClick={() => {
+														onDisplayedOrgsChange(label.datum);
+													}}
+												>
+													<svg width={legendGlyphSize} height={legendGlyphSize}>
+													<rect
+														key={`legend-organisation-${label.datum}`}
+														x = { 0 }
+														y = { 0 }
+														height = {legendGlyphSize }
+														width = { legendGlyphSize }
+														strokeWidth = { 2 }
+														stroke={ label.value }
+														fill={ displayedOrgs.indexOf(label.datum) > -1 ? label.value : '#fff'	}
+														/>
+													</svg>
+													<LegendLabel
+														align="left"
+														margin="0 0 0 4px"
+														onClick={() => {
+															onDisplayedOrgsChange(label.datum);
+														}}
+													>
+														{label.text}
+													</LegendLabel>
+												</LegendItem>
+											)
+										}
+									})}
+								</div>
+							)}
+						</LegendOrdinal>
+					</div>
+				</Grid>
+				<Grid item xs={4}>
 			<svg width={parentWidth} height={parentHeight}>
 				<g transform={`translate(${margin.left}, ${margin.top})`}>
 					<GridRows
@@ -180,7 +197,17 @@ function TransactionBrush({
 						numTicks={8}
           />
 					<Group>
-						<BarStack
+					<AreaStack
+						data = { data }
+						keys = { displayedOrgs }
+						value = {(d, k) => d[k].length}
+						x={ d => barStackScale(d.data.timestamp) + barStackScale.bandwidth() / 2 }
+						y0={d => countScale(d[0])}
+						y1={d => countScale(d[1])}
+						color = { getColor }
+						curve={ curveStepAfter }
+					/>
+{/* 						<BarStack
 							data = { data }
 							keys = { displayedOrgs }
 							value = {(d, k) => d[k].length}
@@ -196,7 +223,7 @@ function TransactionBrush({
 										return (
 										<rect
 											key={`bar-stack-${barStack.index}-${bar.index}`}
-											x = { bar.x }
+											x = { bar.x + barStackScale.bandwidth() / 2 }
 											y = { bar.y }
 											height = { bar.height }
 											width = { bar.width }
@@ -205,13 +232,13 @@ function TransactionBrush({
 									)})
 								)
 							}
-						</BarStack>
+						</BarStack> */}
 					</Group>
 					<Group>
 						<LinePath
-							curve = { curveMonotoneX }
+							curve = { curveStepAfter }
 							data = { total }
-							x = { d => (barStackScale(d.timestamp) + barStackScale.bandwidth() / 2) }
+							x = { d => barStackScale(d.timestamp) + barStackScale.bandwidth() / 2 }
 							y = { d => countScale(d.transactions.length) }
 							stroke={colorScale('total')}
 							strokeWidth = {2}
@@ -252,11 +279,10 @@ function TransactionBrush({
 						numTicks={width > 1920 ? 20 : 10}
 					/>
 					<AxisLeft scale={countScale} numTicks={4} />
-					<text x="-30" y="10" transform="rotate(-90)" fontSize={10}>
-						# Trx
-					</text>
 				</g>
 			</svg>
+			</Grid>
+			</Grid>
 		</React.Fragment>
 	);
 }
