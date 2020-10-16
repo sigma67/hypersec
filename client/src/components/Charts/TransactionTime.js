@@ -8,10 +8,9 @@ import { AxisBottom, AxisLeft } from '@visx/axis';
 import { AreaStack } from '@visx/shape';
 import { curveMonotoneX } from '@visx/curve';
 import { Group } from '@visx/group';
-import { GridRows } from '@visx/grid';
+import { GridRows, GridColumns } from '@visx/grid';
 import { scaleOrdinal } from '@visx/scale';
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
-import { timeParse, timeFormat } from 'd3-time-format';
 import { schemePastel2 } from 'd3-scale-chromatic';
 
 import { max } from 'd3';
@@ -37,10 +36,6 @@ const margin = { top: 0, bottom: 40, left: 50, right: 30 };
 const keys = ['endorser_proposal', 'broadcast_enqueue', 'broadcast_validate'];
 const legendGlyphSize = 15;
 
-const parseDate = timeParse('%Q');
-const format = timeFormat('%b %d, %H:%M');
-const formatDate = (date) => format(parseDate(new Date(date).getTime()));
-
 function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 	const classes = useStyles();
 
@@ -54,7 +49,7 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 		setHeight(parentHeight > 0 ? parentHeight - margin.top - margin.bottom : 0);
 	}, [parentHeight]);
 
-	const [yMax, setYMax] = useState(0.005);
+	const [yMax, setYMax] = useState(0.006);
 
 	const [displayedKeys, setDisplayedKeys] = useState(keys);
 
@@ -152,7 +147,7 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 						</LegendOrdinal>
 					</div>
 				</Grid>
-				<Grid items xs={12}>
+				<Grid item xs={12}>
 					<svg width={parentWidth} height={parentHeight}>
 						<g transform={`translate(${margin.left}, ${margin.top})`}>
 							<GridRows
@@ -162,8 +157,15 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 								stroke="#919191"
 								strokeOpacity={0.3}
 								pointerEvents="none"
-								numTicks={4}
-							/>
+								numTicks={4} />
+							<GridColumns
+								scale={timeScale}
+								height = {height}
+								strokeDasharray="3,3"
+								stroke="#919191"
+								strokeOpacity={0.3}
+								pointerEvents="none"
+								numTicks={width > 520 ? 8 : 5} />
 							<Group>
 								<AreaStack
 									top={margin.top}
@@ -181,7 +183,6 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 								scale={timeScale}
 								top={height}
 								numTicks={width > 520 ? 8 : 5}
-								tickFormat={formatDate}
 							/>
 							<AxisLeft scale={countScale} numTicks={4} />
 						</g>

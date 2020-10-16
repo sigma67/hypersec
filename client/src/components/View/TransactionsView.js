@@ -15,7 +15,8 @@ import Transactions from '../Lists/Transactions';
 import TransactionBrush from '../Charts/TransactionBrush';
 import TransactionSize from '../Charts/TransactionSize';
 import TransactionTime from '../Charts/TransactionTime';
-import { schemeAccent } from 'd3-scale-chromatic';
+import TransactionCount from '../Charts/TransactionCount';
+import { schemePastel2, schemeSet2 } from 'd3-scale-chromatic';
 import { scaleOrdinal } from '@visx/scale';
 import { Row, Col } from 'reactstrap';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
@@ -84,16 +85,20 @@ const useStyles = makeStyles(theme => ({
 		}
 	},
 	brushRow: {
-		marginBottom: '4rem',
-		marginTop: '.5rem'
+		marginBottom: '2rem',
 	},
 	brushCol: {
 		display: 'flex',
 		flex: 1,
-		height: '10rem'
+		height: '5rem'
 	},
 	detailsRow: {
 		marginBottom: '.5rem'
+	},
+	detailsCol: {
+		display: 'flex',
+		flex: 1,
+		height: '12rem'
 	},
 	wrapper: {
 		marginTop: '10px',
@@ -141,19 +146,27 @@ function TransactionsView({
 	const [displayedOrgs, setDisplayedOrgs] = useState([]);
 	const [msPerBin, setMsPerBin] = useState(3600000);
 	const [avgTrxSize, setAvgTrxSize] = useState(0);
-	const [filtered, setFiltered] = useState([]);
-	const [sorted, setSorted] = useState([]);
 	const [err, setErr] = useState(false);
+	const [selectedBins, setSelectedBins] = useState([]);
 	const [selectedTrx, setSelectedTrx] = useState([]);
 	const [selectedMtrx, setSelectedMtrx] = useState([]);
 	const [selectedFrom, setSelectedFrom] = useState(start);
 	const [selectedTo, setSelectedTo] = useState(end);
 
 
-	const colorScale = useMemo(
+	const orgsColorScale = useMemo(
 		() => {
 			return scaleOrdinal({
-				range: ['#58c5c2', ...schemeAccent],
+				range: ['#58c5c2', ...schemePastel2],
+				domain: ['total', ...organisations]
+			})},
+		[organisations]
+	);
+
+	const orgsHoverColorScale = useMemo(
+		() => {
+			return scaleOrdinal({
+				range: ['#58c5c2', ...schemeSet2],
 				domain: ['total', ...organisations]
 			})},
 		[organisations]
@@ -188,15 +201,29 @@ function TransactionsView({
 	useEffect(() => {
 		getAvgTransactionSize();
 		binTrx(transactions);
+		test(transactions);
 	}, [transactions, msPerBin, binTrx]);
 
 	useEffect(() => {
 		if(displayedOrgs.length === 0) { setDisplayedOrgs(organisations); }
 	}, [organisations]);
 
-	const binTrx = useCallback(() => {
-		const startBin = Math.floor(start.valueOf() / msPerBin) * msPerBin;
-		const endBin = Math.floor(end.valueOf() / msPerBin)* msPerBin;
+	const test = useCallback(() => {
+		const senderBins = [];
+		transactions.map((transaction) => {
+			if (!transaction.sender) return;
+			const currentBin = senderBins.find(bin => bin.commonName === transaction.sender.commonName);
+			if (currentBin) {
+				currentBin.transactions.push(transaction);
+			} else {
+				transaction.sender.transactions = [transaction];
+				senderBins.push(transaction.sender);
+			}
+        });
+		//onst senderHeatmap
+	}, [transactions]);
+
+	const bins = useMemo(() => {
 		let currentBinTime = Math.floor(start.valueOf() / msPerBin) * msPerBin;
 		let bins = [];
 		while (currentBinTime < end) {
@@ -207,14 +234,20 @@ function TransactionsView({
 			bins.push(bin);
 			currentBinTime += msPerBin;
 		}
+		return bins;
+	}, [transactions, msPerBin, start, end, organisations]);
+
+	const binTrx = useCallback(() => {
+		const startBin = Math.floor(start.valueOf() / msPerBin) * msPerBin;
+		const endBin = Math.floor(end.valueOf() / msPerBin)* msPerBin;
 		transactions.forEach((transaction) => {
 			const trxBinTimeStamp = Math.floor(moment.utc(transaction.createdt).valueOf() / msPerBin) * msPerBin;
-			// console.log(trxBinTimeStamp < start.valueOf());
 			if (trxBinTimeStamp < startBin || trxBinTimeStamp > endBin) return;
 			bins.find(bin => bin.timestamp === trxBinTimeStamp)['total'].push(transaction);
 			bins.find(bin => bin.timestamp === trxBinTimeStamp)[transaction.creator_msp_id].push(transaction);
 		});
 		setBinnedTrx(bins);
+		setSelectedBins(bins);
 	}, [transactions, msPerBin, start, end, organisations]);
 
 	const handleDisplayedOrgsChanged = org => {
@@ -258,17 +291,11 @@ function TransactionsView({
 		setLoading(false);
 	};
 
-	const handleClearSearch = () => {
-		setSearch(false);
-		setEnd(moment());
-		setStart(moment().subtract(1, 'days'));
-		setErr(false);
-	};
-
-	const handleBrushSelection = (selectedBins) => {
+	const handleBrushSelection = (selectedBinTimestamps) => {
 		const trxSelection = [];
 		const mtrxSelection = [];
-		if(selectedBins.length < 1) {
+		if(selectedBinTimestamps.length < 1) {
+			setSelectedBins(binnedTrx);
 			setSelectedTrx(transactions);
 			setSelectedMtrx(metrics);
 			setSelectedFrom(start);
@@ -276,22 +303,23 @@ function TransactionsView({
 			return;
 		}
 		metrics.forEach(bin => {
-			if (selectedBins.indexOf( Math.floor((bin.time*1000) / msPerBin) * msPerBin) > -1) {
+			if (selectedBinTimestamps.indexOf( Math.floor((bin.time*1000) / msPerBin) * msPerBin) > -1) {
 				mtrxSelection.push(bin);
 			}
 		})
 		binnedTrx.forEach(bin => {
-			if (selectedBins.indexOf(bin.timestamp) > -1) {
+			if (selectedBinTimestamps.indexOf(bin.timestamp) > -1) {
 				trxSelection.push(...bin.total);
 			}
 		});
+		setSelectedBins(binnedTrx.filter(bin => selectedBinTimestamps.indexOf(bin.timestamp) > -1));
 		setSelectedTrx(trxSelection);
 		setSelectedMtrx(mtrxSelection);
-		setSelectedFrom(selectedBins[0]);
+		setSelectedFrom(selectedBinTimestamps[0]);
 		setSelectedTo(
-			selectedBins[selectedBins.length - 1] ?
-			selectedBins[selectedBins.length - 1] + msPerBin / 2 :
-			selectedBins[selectedBins.length - 2] + msPerBin / 2
+			selectedBinTimestamps[selectedBinTimestamps.length - 1] ?
+			selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin / 2 :
+			selectedBinTimestamps[selectedBinTimestamps.length - 2] + msPerBin / 2
 		);
 	};
 
@@ -403,24 +431,37 @@ function TransactionsView({
 										<TransactionBrush
 											parentWidth={visWidth}
 											parentHeight={visHeight}
-											colorScale={colorScale}
-											data={binnedTrx}/*  */
+											data={binnedTrx}
 											onBrushSelectionChange={handleBrushSelection}
-											displayedOrgs={displayedOrgs}
-											onDisplayedOrgsChange={handleDisplayedOrgsChanged}
 										/>
 									)}
 								</ParentSize>
 							</Col>
 						</Row>
 						<Row className={classes.detailsRow}>
-							<Col sm="6" className={classes.brushCol}>
+							<Col sm="4" className={classes.detailsCol}>
+								<ParentSize debounceTime={10}>
+									{({ width: visWidth, height: visHeight }) => (
+										<TransactionCount
+											parentWidth={visWidth}
+											parentHeight={visHeight}
+											colorScale={orgsColorScale}
+											hoverColorScale={orgsHoverColorScale}
+											data={selectedBins}
+											msPerBin={msPerBin}
+											displayedOrgs={displayedOrgs}
+											onDisplayedOrgsChange={handleDisplayedOrgsChanged}
+										/>
+									)}
+								</ParentSize>
+							</Col>
+							<Col sm="4" className={classes.detailsCol}>
 								<ParentSize debounceTime={10}>
 									{({ width: visWidth, height: visHeight }) => (
 										<TransactionSize
 											parentWidth={visWidth}
 											parentHeight={visHeight}
-											colorScale={colorScale}
+											colorScale={orgsColorScale}
 											data={selectedTrx}
 											from={selectedFrom}
 											to={selectedTo}
@@ -431,7 +472,7 @@ function TransactionsView({
 									)}
 								</ParentSize>
 							</Col>
-							<Col sm="6" className={classes.brushCol}>
+							<Col sm="4" className={classes.detailsCol}>
 								<ParentSize debounceTime={10}>
 									{({ width: visWidth, height: visHeight }) => (
 										<TransactionTime
