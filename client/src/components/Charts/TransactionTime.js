@@ -1,19 +1,22 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 import { scaleTime, scaleLinear } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
-import { AreaStack } from '@visx/shape';
-import { curveMonotoneX } from '@visx/curve';
+import { AreaStack, Line } from '@visx/shape';
+import { curveLinear } from '@visx/curve';
 import { Group } from '@visx/group';
 import { GridRows, GridColumns } from '@visx/grid';
 import { scaleOrdinal } from '@visx/scale';
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
+import { withTooltip, Tooltip, TooltipWithBounds, defaultStyles } from '@visx/tooltip';
+import { localPoint } from '@visx/event';
 import { schemePastel2 } from 'd3-scale-chromatic';
-
-import { max } from 'd3';
+import { max, bisector } from 'd3-array';
+import { stack } from 'd3-shape';
+import moment from 'moment';
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
@@ -32,24 +35,28 @@ const useStyles = makeStyles(theme => ({
 /**
  * Global constants
  */
-const margin = { top: 0, bottom: 40, left: 50, right: 30 };
+const defaultMargin = { top: 10, bottom: 40, left: 50, right: 0 };
 const keys = ['endorser_proposal', 'broadcast_enqueue', 'broadcast_validate'];
 const legendGlyphSize = 15;
 
-function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
+export default withTooltip(({
+	width,
+	height,
+	margin = defaultMargin,
+	data,
+	from,
+	to,
+	showTooltip,
+  hideTooltip,
+  tooltipData,
+  tooltipLeft = 0,
+}) => {
 	const classes = useStyles();
 
-	const [width, setWidth] = useState(0);
-	useEffect(() => {
-		setWidth(parentWidth > 0 ? parentWidth - margin.left - margin.right : 0);
-	}, [parentWidth]);
+	const xMax = width - margin.left - margin.right;
+	const yMax = height - margin.top - margin.bottom;
 
-	const [height, setHeight] = useState(0);
-	useEffect(() => {
-		setHeight(parentHeight > 0 ? parentHeight - margin.top - margin.bottom : 0);
-	}, [parentHeight]);
-
-	const [yMax, setYMax] = useState(0.006);
+	const [yMaxValue, setYMaxValue] = useState(0.006);
 
 	const [displayedKeys, setDisplayedKeys] = useState(keys);
 
@@ -62,35 +69,63 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 		[]
 	);
 
-	const timeScale = useMemo(
+	const xScale = useMemo(
 		() =>
 			scaleTime({
-				range: [0, width + margin.right],
+				range: [0, xMax],
 				domain: [from, to]
 			}),
-		[width, from, to]
+		[xMax, from, to]
 	);
 
-	const countScale = useMemo(
+	const yScale = useMemo(
 		() =>
 			scaleLinear({
-				range: [height, 0],
-				domain: [0, yMax],
-				nice: true
+				range: [yMax, 0],
+				domain: [0, yMaxValue]
 			}),
-		[height, yMax]
+		[yMax, yMaxValue]
 	);
 
-	const handleDisplayedMetricsChange = metric => {
+	const handleDisplayedMetricsChange = useCallback(
+		(metric) => {
 		const tempKeys = [...displayedKeys];
 		const index = tempKeys.indexOf(metric);
-		index > -1 ? tempKeys.splice(index, 1) : tempKeys.push(metric);
+		index > -1 ? tempKeys.splice(index, 1) : tempKeys.splice(keys.indexOf(metric), 0, metric);
 		setDisplayedKeys(tempKeys);
-	};
+	}, [displayedKeys]);
+
+	const handleTooltip = useCallback(
+		(event) => {
+			const point = localPoint(event) || { x: 0, y: 0 };
+			point.x -= margin.left
+			const x0 = xScale.invert(point.x);
+			const bisectDate = bisector(d => new Date(d.time*1000)).left;
+			const index = bisectDate(data, x0, 1);
+			const stacks = stack().keys(displayedKeys);
+			const dataStacks = stacks(data);
+			const tooltipCircles = [];
+			keys.forEach(key => {
+				const keyIndex = displayedKeys.indexOf(key);
+				if (keyIndex > -1) {
+					const d0 = dataStacks[keyIndex][index-1];
+					const d1 = dataStacks[keyIndex][index-1];
+					let d = d0;
+					if (d1 && d1.time*1000) {
+						d = x0.valueOf() - d0.time*1000 > d1.time*1000 - x0.valueOf() ? d1 : d0;
+					}
+					tooltipCircles.push({key: key, value: (d['data'][key] * 1000).toFixed(2), time: d['data'].time*1000, yValue: yScale(d[1])});
+				}
+			})
+			showTooltip({
+				tooltipData: tooltipCircles,
+				tooltipLeft: point.x,
+			})
+		}, [showTooltip, data, margin.left, xScale, yScale, displayedKeys]
+	);
 
 	useEffect(() => {
-		setYMax(data ? max(data, d => parseFloat(d.endorser_proposal) + parseFloat(d.broadcast_enqueue) + parseFloat(d.broadcast_validate)) : 0);
-
+		setYMaxValue(data ? max(data, d => parseFloat(d.endorser_proposal) + parseFloat(d.broadcast_enqueue) + parseFloat(d.broadcast_validate)) : 0);
 	}, [data])
 
 	return (
@@ -148,49 +183,107 @@ function TransactionTime({ parentWidth, parentHeight, data, from, to }) {
 					</div>
 				</Grid>
 				<Grid item xs={12}>
-					<svg width={parentWidth} height={parentHeight}>
-						<g transform={`translate(${margin.left}, ${margin.top})`}>
-							<GridRows
-								scale={countScale}
-								width={parentWidth}
-								strokeDasharray="3,3"
-								stroke="#919191"
-								strokeOpacity={0.3}
-								pointerEvents="none"
-								numTicks={4} />
-							<GridColumns
-								scale={timeScale}
-								height = {height}
-								strokeDasharray="3,3"
-								stroke="#919191"
-								strokeOpacity={0.3}
-								pointerEvents="none"
-								numTicks={width > 520 ? 8 : 5} />
+					<svg width={width} height={height}>
+						<Group top={margin.top} left={margin.left}>
 							<Group>
+								<GridRows
+									scale={yScale}
+									width={xMax}
+									strokeDasharray="3,3"
+									stroke="#919191"
+									strokeOpacity={0.3}
+									pointerEvents="none"
+									numTicks={4} />
+								<GridColumns
+									scale={xScale}
+									height = {yMax}
+									strokeDasharray="3,3"
+									stroke="#919191"
+									strokeOpacity={0.3}
+									pointerEvents="none"
+									numTicks={width > 520 ? 8 : 5} />
 								<AreaStack
-									top={margin.top}
-									left={margin.left}
+									top={defaultMargin.top}
+									left={defaultMargin.left}
 									keys={displayedKeys}
-									data={data ? data : []}
-									x={d => timeScale(d.data.time*1000)}
-									y0={d => countScale(d[0])}
-									y1={d => countScale(d[1])}
+									data={data}
+									x={d => xScale(d.data.time*1000)}
+									y0={d => yScale(d[0]) || 0}
+									y1={d => yScale(d[1]) || 0}
 									color={d => areaColorScale(d)}
-									curve={curveMonotoneX}
+									curve={curveLinear}
+									onMouseMove={ (event) => handleTooltip(event) }
+									onMouseLeave={ () => hideTooltip() }
 								/>
 							</Group>
 							<AxisBottom
-								scale={timeScale}
-								top={height}
+								scale={xScale}
+								top={yMax}
 								numTicks={width > 520 ? 8 : 5}
 							/>
-							<AxisLeft scale={countScale} numTicks={4} />
-						</g>
+							<AxisLeft scale={yScale} numTicks={4} />
+							{tooltipData && (
+								<Group>
+									<Line
+										from={{ x: tooltipLeft, y: 0 }}
+										to={{ x: tooltipLeft, y: yMax }}
+										stroke={'#919191'}
+										strokeWidth={1}
+										pointerEvents="none"
+										strokeDasharray="5,2"
+									/>
+									{tooltipData.map(keyCircle => (
+										<circle
+											key={`tooltip-circle-${keyCircle.key}`}
+											cx={tooltipLeft}
+											cy={keyCircle.yValue}
+											r={5}
+											fill={areaColorScale(keyCircle.key)}
+											stroke="white"
+											strokeWidth={.5}
+											pointerEvents="none"
+											/>
+									))}
+								</Group>
+							)}
+						</Group>
 					</svg>
+					{ tooltipData && (
+						<div>
+							{tooltipData.map(keyCircle => (
+										<TooltipWithBounds
+										key={`tooltip-circle-${keyCircle.key}-tooltip`}
+										top={keyCircle.yValue + 30}
+										left={tooltipLeft + 47.5}
+										style={{
+											...defaultStyles,
+											fontSize: '11px',
+										}}
+									>
+										{`${keyCircle.value} ms`}
+									</TooltipWithBounds>
+									))}
+
+						<Tooltip
+							top={height - 14}
+							left={tooltipLeft + 40}
+							style={{
+								...defaultStyles,
+								fontSize: '11px',
+								minWidth: 72,
+								textAlign: 'center',
+								transform: 'translateX(-50%)',
+							}}
+						>
+							<div>
+								{moment(tooltipData[0].time).format('MMM Do, kk:mm:ss:SSS')}
+							</div>
+						</Tooltip>
+						</div>
+
+					)}
 				</Grid>
 			</Grid>
 		</React.Fragment>
 	);
-}
-
-export default TransactionTime;
+});

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
@@ -9,9 +9,9 @@ import { LinePath } from '@visx/shape';
 import { curveMonotoneX } from '@visx/curve';
 import { Group } from '@visx/group';
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
-import { GridRows } from '@visx/grid';
+import { GridRows, GridColumns } from '@visx/grid';
+import { withTooltip } from '@visx/tooltip';
 import { max } from 'd3';
-import { timeParse, timeFormat } from 'd3-time-format';
 
 
 
@@ -32,14 +32,12 @@ const useStyles = makeStyles(theme => ({
 /**
  * Global constants
  */
-const margin = { top: 0, bottom: 40, left: 50, right: 30 };
-const parseDate = timeParse('%Q');
-const format = timeFormat('%b %d, %H:%M');
-const formatDate = (date) => format(parseDate(new Date(date).getTime()));
+const defaultMargin = { top: 10, bottom: 40, left: 50, right: 0 };
 
-function TransactionSize({
-	parentWidth,
-	parentHeight,
+export default withTooltip(({
+	width,
+	height,
+	margin = defaultMargin,
 	colorScale,
 	data,
 	from,
@@ -47,48 +45,37 @@ function TransactionSize({
 	avgTrxSize,
 	displayedOrgs,
 	onDisplayedOrgsChange
-}) {
+}) => {
 	const legendGlyphSize = 20;
 	const classes = useStyles();
-	const [width, setWidth] = useState(0);
-	useEffect(() => {
-		setWidth(parentWidth > 0 ? parentWidth - margin.left - margin.right : 0);
-	}, [parentWidth]);
+	const xMax = width - margin.left - margin.right;
+	const yMax = height - margin.top - margin.bottom;
 
-	const [height, setHeight] = useState(0);
-	useEffect(() => {
-		setHeight(parentHeight > 0 ? parentHeight - margin.top - margin.bottom : 0);
-	}, [parentHeight]);
-
-	const [yMax, setYMax] = useState(avgTrxSize);
-
-	const timeScale = useMemo(
+	const yMaxValue = useMemo(() => {
+		return data
+			? max(data, d => d.size) >= avgTrxSize
+				? max(data, d => d.size)
+				: avgTrxSize
+			: avgTrxSize;
+	}, [data, avgTrxSize])
+	const xScale = useMemo(
 		() =>
 			scaleTime({
-				range: [0, width + margin.right],
+				range: [0, xMax],
 				domain: [from, to]
 			}),
-		[width, from, to]
+		[xMax, from, to]
 	);
 
-	const countScale = useMemo(
+	const yScale = useMemo(
 		() =>
 			scaleLinear({
-				range: [height, 0],
-				domain: [0, yMax],
+				range: [yMax, 0],
+				domain: [0, yMaxValue],
 				nice: true
 			}),
-		[height, yMax]
+		[yMax, yMaxValue]
 	);
-	useEffect(() => {
-		setYMax(
-			data
-				? max(data, d => d.size) >= avgTrxSize
-					? max(data, d => d.size)
-					: avgTrxSize
-				: avgTrxSize
-		);
-	}, [data, avgTrxSize]);
 
 	return (
 		<React.Fragment>
@@ -144,29 +131,25 @@ function TransactionSize({
 					</div>
 				</Grid>
 				<Grid item xs={12}>
-					<svg width={parentWidth} height={parentHeight}>
-						<g transform={`translate(${margin.left}, ${margin.top})`}>
-							<GridRows
-								scale={countScale}
-								width={parentWidth}
-								strokeDasharray="3,3"
-								stroke="#919191"
-								strokeOpacity={0.3}
-								pointerEvents="none"
-								numTicks={4}
-							/>
-		{/* 					<Grid
-								xScale={timeScale}
-								yScale={countScale}
-								width={parentWidth}
-								height={height}
-								numTicksRows={4}
-								numTicksColumns={width > 520 ? 8 : 5}
-								strokeDasharray="3,3"
-								stroke="#919191"
-								strokeOpacity={0.3}
-							/> */}
+					<svg width={width} height={height}>
+					<Group top={margin.top} left={margin.left}>
 							<Group>
+								<GridRows
+									scale={yScale}
+									width={xMax}
+									strokeDasharray="3,3"
+									stroke="#919191"
+									strokeOpacity={0.3}
+									pointerEvents="none"
+									numTicks={4} />
+								<GridColumns
+									scale={xScale}
+									height = {yMax}
+									strokeDasharray="3,3"
+									stroke="#919191"
+									strokeOpacity={0.3}
+									pointerEvents="none"
+									numTicks={yMax > 520 ? 8 : 5} />
 								{displayedOrgs.map(org => {
 									const orgTrx = data.filter(trx => trx.creator_msp_id === org);
 									orgTrx.sort((a, b) => {
@@ -178,8 +161,8 @@ function TransactionSize({
 										<LinePath
 											key = { `trxSize-${org}` }
 											data = { orgTrx }
-											x = { d => timeScale(new Date(d.createdt).getTime()) }
-											y = { d => countScale(d.size) }
+											x = { d => xScale(new Date(d.createdt).getTime()) }
+											y = { d => yScale(d.size) }
 											strokeWidth = { 3 }
 											curve = { curveMonotoneX }
 											stroke = { colorScale(org) }
@@ -189,19 +172,16 @@ function TransactionSize({
 								})}
 							</Group>
 							<AxisBottom
-								scale={timeScale}
-								top={height}
-								numTicks={width > 520 ? 8 : 5}
-								tickFormat={formatDate}
+								scale={xScale}
+								top={yMax}
+								numTicks={xMax > 520 ? 8 : 5}
 							/>
-							<AxisLeft scale={countScale} numTicks={4} />
-						</g>
+							<AxisLeft scale={yScale} numTicks={4} />
+						</Group>
 					</svg>
 				</Grid>
 			</Grid>
 
 		</React.Fragment>
 	);
-}
-
-export default TransactionSize;
+});

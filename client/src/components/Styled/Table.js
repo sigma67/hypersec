@@ -61,7 +61,7 @@ const styles = theme => {
 };
 
 const Table = props => {
-	const { className = '', list = false, classes, ...rest } = props;
+	const { className = '', /*list = false,*/ classes, ...rest } = props;
 	const clazz = classnames(
 		classes.table,
 		'-striped -highlight',

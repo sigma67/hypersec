@@ -15,8 +15,8 @@ import { timeParse, timeFormat } from 'd3-time-format';
 /**
  * Global constants
  */
-const margin = { top: 5, bottom: 30, left: 10, right: 10 };
-const background = '#58c5c2';
+const defaultMargin = { top: 5, bottom: 30, left: 0, right: 0 };
+const backgroundColor = '#58c5c2';
 const selectedBrushStyle = { fill: '#919191', opacity: .5, stroke: 'white' }
 
 const parseDate = timeParse('%Q');
@@ -24,21 +24,15 @@ const format = timeFormat('%b %d, %H:%M');
 const formatDate = (date) => format(parseDate(date));
 
 function TransactionBrush({
-	parentWidth,
-	parentHeight,
+	width,
+	height,
+	margin = defaultMargin,
 	data,
 	onBrushSelectionChange
 }) {
 
-	const [width, setWidth] = useState(0);
-	useEffect(() => {
-		setWidth(parentWidth > 0 ? parentWidth - margin.left - margin.right : 0);
-	}, [parentWidth]);
-
-	const [height, setHeight] = useState(0);
-	useEffect(() => {
-		setHeight(parentHeight > 0 ? parentHeight - margin.top - margin.bottom : 0);
-	}, [parentHeight]);
+	const xMax = width - margin.left - margin.right;
+	const yMax = height - margin.top - margin.bottom;
 
 	const [maxTrxCount, setMaxTrxCount] = useState(0);
 	const [total, setTotal] = useState([]);
@@ -57,20 +51,20 @@ function TransactionBrush({
 	const xScale = useMemo(
 		() =>
 			scaleBand({
-				range: [0, width],
+				range: [0, xMax],
 				domain: data.map(d => d.timestamp),
 			}),
-		[width, data]
+		[xMax, data]
 	);
 
 	const yScale = useMemo(
 		() =>
 			scaleLinear({
-				range: [height, 0],
+				range: [yMax, 0],
 				domain: [0, maxTrxCount],
 				nice: true
 			}),
-		[height, maxTrxCount]
+		[yMax, maxTrxCount]
 	);
 
 	const onBrushChange = domain => {
@@ -82,14 +76,14 @@ function TransactionBrush({
 		<React.Fragment>
 			<Grid container>
 				<Grid item xs={4}>
-					<svg width={parentWidth} height={parentHeight}>
-						<g transform={`translate(${margin.left}, ${margin.top})`}>
+					<svg width={width} height={height}>
+						<Group top={margin.top} left={margin.left}>
 							<Group>
 								<LinearGradient
 									id="gradient"
-									from={background}
+									from={backgroundColor}
 									fromOpacity={1}
-									to={background}
+									to={backgroundColor}
 									toOpacity={0.2}
 								/>
 								<AreaClosed
@@ -107,8 +101,8 @@ function TransactionBrush({
 								<Brush
 									xScale={xScale}
 									yScale={yScale}
-									width={width}
-									height={height}
+									width={xMax}
+									height={yMax > 0 ? yMax : 0}
 									handleSize={8}
 									resizeTriggerAreas={['left', 'right']}
 									brushDirection="horizontal"
@@ -119,15 +113,15 @@ function TransactionBrush({
 							</Group>
 							<AxisBottom
 								scale={xScale}
-								top={height}
+								top={yMax}
 								tickFormat={formatDate}
 								tickLabelProps={() => ({
 									fontSize: 11,
 									textAnchor: 'middle',
 								})}
-								numTicks={width > 1920 ? 20 : 10}
+								numTicks={xMax > 1920 ? 20 : 10}
 							/>
-						</g>
+						</Group>
 					</svg>
 				</Grid>
 			</Grid>

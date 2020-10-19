@@ -29,37 +29,34 @@ const useStyles = makeStyles(theme => ({
 	},
 }));
 
+const defaultMargin = { top: 10, bottom: 40, left: 30, right: 0 };
+
 const getDate = d => d.timestamp;
 const parseDate = timeParse('%Q');
 const format = timeFormat('%b %d, %H:%M');
 const formatDate = (date) => format(parseDate(date));
 
 export default withTooltip(({
-	parentWidth,
-	parentHeight,
+	width,
+	height,
+	margin = defaultMargin,
 	colorScale,
 	hoverColorScale,
 	msPerBin,
 	data,
 	displayedOrgs,
 	onDisplayedOrgsChange,
-	margin = { top: 0, bottom: 40, left: 30, right: 10 },
 	showTooltip,
   hideTooltip,
-  tooltipData,
-  tooltipLeft,
+	tooltipData,
+	tooltipTop = 0,
+  tooltipLeft = 0,
 }) => {
 	const legendGlyphSize = 15;
 	const classes = useStyles();
-	const [width, setWidth] = useState(0);
-	useEffect(() => {
-		setWidth(parentWidth > 0 ? parentWidth - margin.left - margin.right : 0);
-	}, [parentWidth, margin.left, margin.right]);
 
-	const [height, setHeight] = useState(0);
-	useEffect(() => {
-		setHeight(parentHeight > 0 ? parentHeight - margin.top - margin.bottom : 0);
-	}, [parentHeight, margin.top, margin.bottom]);
+	const xMax = width - margin.left - margin.right;
+	const yMax = height - margin.top - margin.bottom;
 
 	const [maxTrxCount, setMaxTrxCount] = useState(0);
 	useEffect(() => {
@@ -74,21 +71,21 @@ export default withTooltip(({
 	const xScale = useMemo(
 		() =>
 			scaleBand({
-				range: [0, width],
+				range: [0, xMax],
 				domain: data.map(d => getDate(d)),
 				padding: 0.1
 			}),
-		[width, data]
+		[xMax, data]
 	);
 
 	const yScale = useMemo(
 		() =>
 			scaleLinear({
-				range: [height, 0],
+				range: [yMax, 0],
 				domain: [0, maxTrxCount],
 				nice: true
 			}),
-		[height, maxTrxCount]
+		[yMax, maxTrxCount]
 	);
 
 	const [hoveredBar, setHoveredBar] = useState();
@@ -115,84 +112,55 @@ export default withTooltip(({
 						<LegendOrdinal scale={colorScale}>
 							{labels => (
 								<div style={{ display: 'flex', flexDirection: 'row' }}>
-									{labels.map((label, i) => {
-										if(label.datum === 'total') {
-											return (
-												<LegendItem
-													key = {`brush-legend-total`}
-													margin = "0 5px"
-												>
-													<svg width = { legendGlyphSize } height = { legendGlyphSize }>
-														<line
-															stroke = {label.value}
-															strokeWidth = { 2 }
-															strokeDasharray = {'5, 5'}
-															x1={0}
-															x2={legendGlyphSize}
-															y1={legendGlyphSize / 2}
-															y2={legendGlyphSize / 2}
-														/>
-													</svg>
-													<LegendLabel
-														align="left"
-														margin="0 0 0 4px"
-													>
-														{label.text}
-													</LegendLabel>
-												</LegendItem>
-											)
-										}	else {
-											return (
-												<LegendItem
+									{labels.map((label, i) => (
+										<LegendItem
+											key={`legend-organisation-${label.datum}`}
+											margin="0 5px"
+											onClick={() => {
+												onDisplayedOrgsChange(label.datum);
+											}}
+										>
+											<svg width={legendGlyphSize} height={legendGlyphSize}>
+												<rect
 													key={`legend-organisation-${label.datum}`}
-													margin="0 5px"
-													onClick={() => {
-														onDisplayedOrgsChange(label.datum);
-													}}
-												>
-													<svg width={legendGlyphSize} height={legendGlyphSize}>
-														<rect
-															key={`legend-organisation-${label.datum}`}
-															x = { 0 }
-															y = { 0 }
-															height = {legendGlyphSize }
-															width = { legendGlyphSize }
-															strokeWidth = { 2 }
-															stroke={ label.value }
-															fill={ displayedOrgs.indexOf(label.datum) > -1 ? label.value : '#fff'	}
-															/>
-													</svg>
-													<LegendLabel
-														align="left"
-														margin="0 0 0 4px"
-														onClick={() => {
-															onDisplayedOrgsChange(label.datum);
-														}}
-													>
-														{label.text}
-													</LegendLabel>
-												</LegendItem>
-											)
-										}
-									})}
+													x = { 0 }
+													y = { 0 }
+													height = {legendGlyphSize }
+													width = { legendGlyphSize }
+													strokeWidth = { 2 }
+													stroke={ label.value }
+													fill={ displayedOrgs.indexOf(label.datum) > -1 ? label.value : '#fff'	}
+													/>
+											</svg>
+											<LegendLabel
+												align="left"
+												margin="0 0 0 4px"
+												onClick={() => {
+													onDisplayedOrgsChange(label.datum);
+												}}
+											>
+												{label.text}
+											</LegendLabel>
+										</LegendItem>
+									))}
 								</div>
 							)}
 						</LegendOrdinal>
 					</div>
 				</Grid>
 				<Grid item xs={4}>
-					<svg width={parentWidth} height={parentHeight}>
-						<g transform={`translate(${margin.left}, ${margin.top})`}>
-							<GridRows
-								scale={yScale}
-								width={width}
-								strokeDasharray="3,3"
-								stroke="#919191"
-								strokeOpacity={0.3}
-								pointerEvents="none"
-								numTicks={8}
-							/>
+					<svg width={width} height={height}>
+						<Group top={margin.top} left={margin.left}>
 							<Group>
+								<GridRows
+									scale={yScale}
+									width={xMax}
+									strokeDasharray="3,3"
+									stroke="#919191"
+									strokeOpacity={0.3}
+									pointerEvents="none"
+									numTicks={8}
+								/>
 								<BarStack
 									data = { data }
 									keys = { displayedOrgs }
@@ -218,8 +186,8 @@ export default withTooltip(({
 													onMouseEnter={() => {
 														setHoveredBar({index: bar.index, key: bar.key});
 														showTooltip({
-															tooltipLeft: bar.x,
-															tooltipTop: bar.y,
+															tooltipLeft: bar.x + margin.left,
+															tooltipTop: yScale(bar.bar[0]),
 															tooltipData: {key: bar.key, data: bar.bar}
 														})
 													}}
@@ -235,7 +203,7 @@ export default withTooltip(({
 							</Group>
 							<AxisBottom
 								scale={xScale}
-								top={height}
+								top={yMax}
 								tickFormat={formatDate}
 								tickLabelProps={() => ({
 									fontSize: 11,
@@ -245,25 +213,28 @@ export default withTooltip(({
 								numTicks={5}
 							/>
 							<AxisLeft scale={yScale} numTicks={4} />
-						</g>
+						</Group>
 					</svg>
 					{tooltipData && (
 						<div>
 							<Tooltip
-								top={height + 14}
+								top={tooltipTop + 14}
 								left={tooltipLeft}
 								style={{
 									...defaultStyles,
 									minWidth: 72,
 									textAlign: 'center',
-									// transform: 'translateX(50%)',
+									transform: 'translateX(-50%)',
+									fontSize: '11px'
 								}}
 							>
-								<Typography component='div'>
-									<Box m={1} fontSize={'11px'}>
-									{`${moment(tooltipData.data['data'].timestamp).hours()}:00 - ${moment(tooltipData.data['data'].timestamp + msPerBin).hours()}:00: ${tooltipData.data[1] - tooltipData.data[0]}`}
-									</Box>
-								</Typography>
+								<div>
+										{
+										`${moment(tooltipData.data['data']).format('MMM, Do')}, ${moment(tooltipData.data['data'].timestamp).hours()}:00 - ${moment(tooltipData.data['data'].timestamp + msPerBin).hours()}:00: `}
+										<strong style={{fontWeight: 800}}>
+											{tooltipData.data[1] - tooltipData.data[0]}
+										</strong> trx
+									</div>
 							</Tooltip>
 						</div>
 					)}

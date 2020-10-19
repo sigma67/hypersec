@@ -427,10 +427,10 @@ function TransactionsView({
 						<Row className={classes.brushRow}>
 							<Col sm="12" className={classes.brushCol}>
 								<ParentSize debounceTime={10}>
-									{({ width: visWidth, height: visHeight }) => (
+									{({ width, height }) => (
 										<TransactionBrush
-											parentWidth={visWidth}
-											parentHeight={visHeight}
+											width={width}
+											height={height}
 											data={binnedTrx}
 											onBrushSelectionChange={handleBrushSelection}
 										/>
@@ -441,10 +441,10 @@ function TransactionsView({
 						<Row className={classes.detailsRow}>
 							<Col sm="4" className={classes.detailsCol}>
 								<ParentSize debounceTime={10}>
-									{({ width: visWidth, height: visHeight }) => (
+									{({ width, height }) => (
 										<TransactionCount
-											parentWidth={visWidth}
-											parentHeight={visHeight}
+											width={width}
+											height={height}
 											colorScale={orgsColorScale}
 											hoverColorScale={orgsHoverColorScale}
 											data={selectedBins}
@@ -457,10 +457,10 @@ function TransactionsView({
 							</Col>
 							<Col sm="4" className={classes.detailsCol}>
 								<ParentSize debounceTime={10}>
-									{({ width: visWidth, height: visHeight }) => (
+								{({ width, height }) => (
 										<TransactionSize
-											parentWidth={visWidth}
-											parentHeight={visHeight}
+											width={width}
+											height={height}
 											colorScale={orgsColorScale}
 											data={selectedTrx}
 											from={selectedFrom}
@@ -474,10 +474,10 @@ function TransactionsView({
 							</Col>
 							<Col sm="4" className={classes.detailsCol}>
 								<ParentSize debounceTime={10}>
-									{({ width: visWidth, height: visHeight }) => (
+									{({ width, height }) => (
 										<TransactionTime
-											parentWidth={visWidth}
-											parentHeight={visHeight}
+											width={width}
+											height={height}
 											data={selectedMtrx}
 											from={selectedFrom}
 											to={selectedTo}

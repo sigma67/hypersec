@@ -5,7 +5,6 @@
 import React, { Component } from 'react';
 import FontAwesome from 'react-fontawesome';
 import { Card, CardBody, CardTitle } from 'reactstrap';
-import JSONTree from 'react-json-tree';
 import Modal from '../Styled/Modal';
 import ReactTable from "../Styled/Table";
 import moment from 'moment';
