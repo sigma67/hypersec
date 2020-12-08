@@ -45,7 +45,8 @@ CREATE TABLE chaincodes
   channel_genesis_hash character varying(256) DEFAULT NULL,
   txcount integer DEFAULT 0,
   createdt Timestamp DEFAULT NULL,
-  network_name varchar(255)
+  network_name varchar(255),
+  scan character varying DEFAULT NULL
 );
 
 ALTER table chaincodes owner to :user;
