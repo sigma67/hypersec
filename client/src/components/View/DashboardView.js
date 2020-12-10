@@ -242,7 +242,6 @@ export class DashboardView extends Component {
 					<Row>
 						<Col sm="6">
 							<Card className={classes.section}>
-								<PeersHealth peerStatus={peerStatus} />
 								<Issues getIssues={getIssues} issues={issues}/>
 							</Card>
 							<Card className={classes.section}>

@@ -520,7 +520,7 @@ TransactionsView.propTypes = {
 	getTransactionList: getTransactionListType,
 	transaction: transactionType,
 	transactionList: transactionListType.isRequired,
-	getMetrics: getMetricsType,
+	getMetrics: getMetricsType
 };
 
 export default TransactionsView;

@@ -25,7 +25,7 @@ const externalroutes = async function(router, platform) {
 				qs: {
 					jql: 'project = FAB AND issuetype = Bug AND status in ("In Progress",Closed,"To Do",Returned,"In CR Review") '
 						 + 'ORDER BY resolved DESC, updated DESC',
-					fields: 'summary,description'
+					fields: 'summary,description,priority'
 				}
 			}, (err, response, body) => {
 				if (err) {

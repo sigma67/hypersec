@@ -3,7 +3,6 @@
  */
 
 import React, {
-	useState,
 	useEffect,
 } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
@@ -12,6 +11,7 @@ import AccordionDetails from '@material-ui/core/AccordionDetails';
 import AccordionSummary from '@material-ui/core/AccordionSummary';
 import Typography from '@material-ui/core/Typography';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import { getIssuesType } from '../types';
 
 const useStyles = makeStyles((theme) => ({
 	root: {
@@ -26,11 +26,18 @@ const useStyles = makeStyles((theme) => ({
 	  fontSize: theme.typography.pxToRem(15),
 	  color: theme.palette.text.secondary,
 	},
-  }));
+	scrollable: {
+		height: 300,
+		overflowY: 'scroll'
+	},
+	priority: {
+		width: '1.5rem'
+	}
+}));
 
 /* eslint-enable */
 
-function Issues (getIssues, issues) {
+const Issues = ({getIssues, issues}) => {
 	const classes = useStyles();
 	const [expanded, setExpanded] = React.useState(false);
 
@@ -38,34 +45,48 @@ function Issues (getIssues, issues) {
 		setExpanded(isExpanded ? panel : false);
 	};
 	useEffect(() => {
-		async function fetchData() { await getIssues(); }
+		async function fetchData() {
+			await getIssues();
+	 }
+		issues = [];
 		fetchData();
-	});
-	//let issues = [{id: 123, description: "abc"}, {id: 234, description: "def"}]
-	
-	return (
-		<div>
-			{ issues.map((entry, index) => (
-				<Accordion expanded={expanded === 'panel' + index} onChange={handleChange('panel' + index)}>
-					<AccordionSummary
-					expandIcon={<ExpandMoreIcon />}
-					aria-controls="panel1bh-content"
-					id="panel1bh-header"
-					>
-					<Typography className={classes.heading}>{entry.id}</Typography>
-					<Typography className={classes.secondaryHeading}>{entry.description}</Typography>
-					</AccordionSummary>
-					<AccordionDetails>
-					<Typography>
-						Nulla facilisi. Phasellus sollicitudin nulla et quam mattis feugiat. Aliquam eget
-						maximus est, id dignissim quam.
-					</Typography>
-					</AccordionDetails>
-				</Accordion>
-			))
-			}
-		</div>
-	);
+	}, []);
+
+	if(issues) {
+		return (
+			<div>
+				<React.Fragment>
+				<div className={classes.scrollable}>
+				{issues.map((entry, index) => (
+					<Accordion expanded={expanded === 'panel' + index} onChange={handleChange('panel' + index)}>
+						<AccordionSummary
+							expandIcon={<img className={classes.priority} src={entry.fields.priority.iconUrl}/>}
+							aria-controls="panel1bh-content"
+							id="panel1bh-header"
+						>
+							<Typography className={classes.heading}>{entry.key}</Typography>
+							<Typography className={classes.secondaryHeading}>{entry.fields.summary}</Typography>
+						</AccordionSummary>
+						<AccordionDetails>
+							<Typography>
+								{entry.fields.description}
+							</Typography>
+						</AccordionDetails>
+					</Accordion>
+				))
+				}
+				</div>
+				</React.Fragment>
+			</div>
+		);
+	}
+	else{
+		return (<div></div>)
+	}
 };
+
+Issues.propTypes = {
+	getIssues: getIssuesType
+}
 
 export default Issues;

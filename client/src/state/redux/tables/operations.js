@@ -162,10 +162,9 @@ const logs = peer => dispatch =>
 		});
 
 
-const issues = () => dispatch => 
+const issues = () => dispatch =>
 	get('/api/issues/')
 	.then(resp => {
-		console.log(resp)
 		if (resp.status === 401) {
 			dispatch(
 				actions.getErroMessage(
@@ -189,5 +188,6 @@ export default {
 	transactionList,
 	transactionListSearch,
 	blockListSearch,
-	logs
+	logs,
+	issues
 };
