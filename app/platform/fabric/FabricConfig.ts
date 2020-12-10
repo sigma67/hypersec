@@ -2,11 +2,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const fs = require('fs');
+import * as fs from 'fs';
 import * as path from 'path';
-import {helper} from '../../common/helper';
-import {explorerError} from '../../common/ExplorerMessage'
-import {ExplorerError} from '../../common/ExplorerError';
+import { helper } from '../../common/helper';
+import { explorerError } from '../../common/ExplorerMessage';
+import { ExplorerError } from '../../common/ExplorerError';
 
 const logger = helper.getLogger('FabricConfig');
 
@@ -16,9 +16,9 @@ const logger = helper.getLogger('FabricConfig');
  * @class FabricConfig
  */
 export class FabricConfig {
-	logger : any;
-	config : any;
-	network_id : string;
+	logger: any;
+	config: any;
+	network_id: string;
 
 	/**
 	 * Creates an instance of FabricConfig.
@@ -107,6 +107,16 @@ export class FabricConfig {
 	 */
 	getEnableAuthentication() {
 		return this.config.client.enableAuthentication;
+	}
+
+	/**
+	 *
+	 *
+	 * @returns
+	 * @memberof FabricConfig
+	 */
+	getClientTlsIdentity() {
+		return this.config.client.clientTlsIdentity;
 	}
 
 	/**
@@ -321,21 +331,25 @@ export class FabricConfig {
 	 * @returns
 	 * @memberof FabricConfig
 	 */
-	getCertificateAuthorities() {
-		const caURL = [];
-		let serverCertPath = null;
-
-		if (this.config.certificateAuthorities) {
-			for (const x in this.config.certificateAuthorities) {
-				if (this.config.certificateAuthorities[x].tlsCACerts) {
-					serverCertPath = this.config.certificateAuthorities[x].tlsCACerts.path;
-				}
-				if (this.config.certificateAuthorities[x].url) {
-					caURL.push(this.config.certificateAuthorities[x].url);
-				}
-			}
+	getTlsCACertsPem(certificateAuthority) {
+		const tlsCACerts = this.config.certificateAuthorities[certificateAuthority]
+			.tlsCACerts;
+		if (
+			tlsCACerts === undefined ||
+			(tlsCACerts.path === undefined && tlsCACerts.pem === undefined)
+		) {
+			logger.error(
+				`Not found tlsCACerts configuration: ${certificateAuthority.url}`
+			);
+			return '';
 		}
-		return { caURL, serverCertPath };
+		if (tlsCACerts.path !== undefined) {
+			return fs.readFileSync(
+				path.resolve(__dirname, '../../..', tlsCACerts.path),
+				'utf8'
+			);
+		}
+		return tlsCACerts.pem;
 	}
 
 	/**

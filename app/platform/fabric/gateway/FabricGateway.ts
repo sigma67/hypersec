@@ -2,39 +2,36 @@
  *SPDX-License-Identifier: Apache-2.0
  */
 
-import { Wallets, Gateway } from 'fabric-network';
-const {
-	Discoverer,
-	DiscoveryService,
-	Client,
-	BlockDecoder
-} = require('fabric-common');
-const fabprotos = require('fabric-protos');
+import { X509Identity, Wallets, Gateway } from 'fabric-network';
+import * as fabprotos from 'fabric-protos';
+import { Discoverer, DiscoveryService } from 'fabric-common';
 import concat from 'lodash/concat';
-
-const FabricCAServices = require('fabric-ca-client');
-
-const fs = require('fs');
 import * as path from 'path';
-import {helper} from '../../../common/helper';
+import * as fs from 'fs';
+import { helper } from '../../../common/helper';
+import { explorerError } from '../../../common/ExplorerMessage';
+import { ExplorerError } from '../../../common/ExplorerError';
+
+/* eslint-disable @typescript-eslint/no-var-requires */
+const { BlockDecoder, Client } = require('fabric-common');
+const FabricCAServices = require('fabric-ca-client');
+/* eslint-enable @typescript-eslint/no-var-requires */
 
 const logger = helper.getLogger('FabricGateway');
-import {explorerError} from '../../../common/ExplorerMessage'
-import {ExplorerError} from '../../../common/ExplorerError';
 
 export class FabricGateway {
-
-	fabricConfig : any;
-	config : any;
-	gateway : any;
-	wallet : any;
-	tlsEnable : boolean;
-	defaultChannelName : string;
-	fabricCaEnabled : boolean;
-	client : any;
-	FSWALLET : string;
-	enableAuthentication : boolean;
-	asLocalhost : boolean;
+	fabricConfig: any;
+	config: any;
+	gateway: any;
+	wallet: any;
+	tlsEnable: boolean;
+	defaultChannelName: string;
+	fabricCaEnabled: boolean;
+	client: any;
+	clientTlsIdentity: X509Identity;
+	FSWALLET: string;
+	enableAuthentication: boolean;
+	asLocalhost: boolean;
 
 	/**
 	 * Creates an instance of FabricGateway.
@@ -51,6 +48,7 @@ export class FabricGateway {
 		this.gateway = new Gateway();
 		this.fabricCaEnabled = false;
 		this.client = null;
+		this.clientTlsIdentity = null;
 		this.FSWALLET = null;
 		this.enableAuthentication = false;
 		this.asLocalhost = false;
@@ -122,14 +120,14 @@ export class FabricGateway {
 					enabled: true,
 					asLocalhost: this.asLocalhost
 				},
-				clientTlsIdentity: ""
+				clientTlsIdentity: ''
 			};
 
-			if ('clientTlsIdentity' in this.config.client) {
+			const mTlsIdLabel = this.fabricConfig.getClientTlsIdentity();
+			if (mTlsIdLabel) {
 				logger.info('client TLS enabled');
-				const mTlsIdLabel = this.config.client.clientTlsIdentity;
-				const mTlsId = await this.wallet.get(mTlsIdLabel);
-				if (mTlsId !== undefined) {
+				this.clientTlsIdentity = await this.wallet.get(mTlsIdLabel);
+				if (this.clientTlsIdentity !== undefined) {
 					connectionOptions.clientTlsIdentity = mTlsIdLabel;
 				} else {
 					throw new ExplorerError(
@@ -141,7 +139,9 @@ export class FabricGateway {
 			// Connect to gateway
 			await this.gateway.connect(this.config, connectionOptions);
 		} catch (error) {
-			logger.error(`${error}`);
+			logger.error(
+				`${explorerError.ERROR_1010}: ${JSON.stringify(error, null, 2)}`
+			);
 			throw new ExplorerError(explorerError.ERROR_1010);
 		}
 	}
@@ -195,13 +195,15 @@ export class FabricGateway {
 		}
 
 		try {
-			const caConfig = this.fabricConfig.getCertificateAuthorities();
-			const tlsCACert = fs.readFileSync(caConfig.serverCertPath, 'utf8');
-
-			const ca = new FabricCAServices(caConfig.caURL[0], {
-				trustedRoots: tlsCACert,
-				verify: false
-			});
+			const caName = this.config.organizations[this.fabricConfig.getOrganization()]
+				.certificateAuthorities[0];
+			const ca = new FabricCAServices(
+				this.config.certificateAuthorities[caName].url,
+				{
+					trustedRoots: this.fabricConfig.getTlsCACertsPem(caName),
+					verify: false
+				}
+			);
 
 			const enrollment = await ca.enroll({
 				enrollmentID: this.fabricConfig.getCaAdminUser(),
@@ -330,7 +332,7 @@ export class FabricGateway {
 		let result = await contract.evaluateTransaction('GetChaincodes');
 		let resultJson = fabprotos.protos.ChaincodeQueryResponse.decode(result);
 		if (resultJson.chaincodes.length <= 0) {
-			resultJson = { chaincodes: [] };
+			resultJson = { chaincodes: [], toJSON: null };
 			contract = network.getContract('_lifecycle');
 			result = await contract.evaluateTransaction('QueryInstalledChaincodes', '');
 			const decodedReult = fabprotos.lifecycle.QueryInstalledChaincodesResult.decode(
@@ -378,12 +380,20 @@ export class FabricGateway {
 			const ds = new DiscoveryService('be discovery service', channel);
 
 			const client = new Client('discovery client');
-			client.setTlsClientCertAndKey();
+			if (this.clientTlsIdentity) {
+				logger.info('client TLS enabled');
+				client.setTlsClientCertAndKey(
+					this.clientTlsIdentity.credentials.certificate,
+					this.clientTlsIdentity.credentials.privateKey
+				);
+			} else {
+				client.setTlsClientCertAndKey();
+			}
 
 			const mspID = this.config.client.organization;
 			const targets = [];
 			for (const peer of this.config.organizations[mspID].peers) {
-				const discoverer = new Discoverer(`be discoverer ${peer}`, client);
+				const discoverer = new Discoverer(`be discoverer ${peer}`, client, mspID);
 				const url = this.config.peers[peer].url;
 				const pem = this.fabricConfig.getPeerTlsCACertsPem(peer);
 				let grpcOpt = {};

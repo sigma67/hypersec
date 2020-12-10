@@ -54,7 +54,7 @@ And if you want to refer more detail of each configuration, please refer [README
 
 ## Start Hyperledger Fabric network
 
-In this guide, we assume that you've already started test network by following [Hyperledger Fabric official tutorial](https://hyperledger-fabric.readthedocs.io/en/master/test_network.html).
+In this guide, we assume that you've already started test network by following [Hyperledger Fabric official tutorial](https://hyperledger-fabric.readthedocs.io/en/latest/test_network.html).
 
 ## Configure
 
@@ -102,7 +102,7 @@ In this guide, we assume that you've already started test network by following [
               - ./config.json:/opt/explorer/app/platform/fabric/config.json
               - ./connection-profile:/opt/explorer/app/platform/fabric/connection-profile
               - ./organizations:/tmp/crypto
-              - walletstore:/opt/wallet
+              - walletstore:/opt/explorer/wallet
     ```
 
 * When you connect Explorer to your fabric network through bridge network, you need to set DISCOVERY_AS_LOCALHOST to false for disabling hostname mapping into localhost.
@@ -311,7 +311,7 @@ $ npm install
 $ npm run build
 ```
 
-## Run Hyperledger Explorer 
+## Run Hyperledger Explorer
 
 ### Run Locally in Same Location
 
@@ -320,7 +320,7 @@ $ npm run build
     ```json
     "sync": {
       "type": "local"
-    }   
+    }
     ```
 
 * `npm start`
@@ -342,7 +342,7 @@ $ DISCOVERY_AS_LOCALHOST=false npm start
     ```json
     "sync": {
       "type": "host"
-    }   
+    }
     ```
 
 * If the Hyperledger Explorer was used previously in your browser be sure to clear the cache before relaunching

@@ -17,11 +17,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { helper } from '../../common/helper';
 import { Client } from 'pg';
-import { Sequelize, Optional } from 'sequelize';
-
-const fs = require('fs');
+import { Sequelize } from 'sequelize';
+import * as fs from 'fs';
+import { helper } from '../../common/helper';
 
 const logger = helper.getLogger('PgService');
 
@@ -31,16 +30,22 @@ const logger = helper.getLogger('PgService');
  * @class PgService
  */
 export class PgService {
-	pgconfig : any;
-	userModel : any;
-	client : Client;
+	pgconfig: any;
+	userModel: any;
+	client: Client;
 
 	/**
 	 * Creates an instance of PgService.
 	 * @param {*} pgconfig
 	 * @memberof PgService
 	 */
-	constructor(pgconfig: { host: any; port: any; database: any; username: any; passwd: any; }) {
+	constructor(pgconfig: {
+		host: any;
+		port: any;
+		database: any;
+		username: any;
+		passwd: any;
+	}) {
 		this.pgconfig = pgconfig;
 		this.pgconfig.host = process.env.DATABASE_HOST || pgconfig.host;
 		this.pgconfig.port = process.env.DATABASE_PORT || pgconfig.port;
@@ -107,7 +112,7 @@ export class PgService {
 	 */
 	async handleDisconnect() {
 		try {
-			this.client.on('error', (err : NodeJS.ErrnoException) => {
+			this.client.on('error', (err: NodeJS.ErrnoException) => {
 				logger.error('db error', err);
 				if (err.code === 'PROTOCOL_CONNECTION_LOST') {
 					this.handleDisconnect();
@@ -156,7 +161,6 @@ export class PgService {
 	 * @memberof PgService
 	 */
 	saveRow(tablename, columnValues) {
-		const _self = this;
 		return new Promise((resolve, reject) => {
 			const addSqlParams = [];
 			const updatesqlcolumn = [];
@@ -175,7 +179,7 @@ export class PgService {
 			const addSql = `INSERT INTO ${tablename}  ( ${updatesqlparmstr} ) VALUES( ${updatesqlflagstr}  ) RETURNING *;`;
 			logger.debug(`Insert sql is ${addSql}`);
 			//   Console.log(`Insert sql is ${addSql}`);
-			_self.client.query(addSql, addSqlParams, (err, res) => {
+			this.client.query(addSql, addSqlParams, (err, res) => {
 				if (err) {
 					logger.error('[INSERT ERROR] - ', err.message);
 					reject(err);
@@ -208,7 +212,6 @@ export class PgService {
 	 *
 	 */
 	updateRowByPk(tablename, columnAndValue, pkName, pkValue) {
-		const _self = this;
 		return new Promise((resolve, reject) => {
 			const addSqlParams = [];
 			const updateParms = [];
@@ -232,7 +235,7 @@ export class PgService {
 			const addSql = ` UPDATE ${tablename} set ${updateParmsStr} WHERE ${pkName} = ${pkValue} RETURNING *`;
 
 			logger.debug(`update sql is ${addSql}`);
-			_self.client.query(addSql, addSqlParams, (err, res) => {
+			this.client.query(addSql, addSqlParams, (err, res) => {
 				if (err) {
 					logger.error('[INSERT ERROR] - ', err.message);
 					reject(err);
@@ -265,7 +268,6 @@ export class PgService {
 	 *
 	 */
 	updateRow(tablename, columnAndValue, condition) {
-		const _self = this;
 		return new Promise((resolve, reject) => {
 			const addSqlParams = [];
 			const updateParms = [];
@@ -289,7 +291,7 @@ export class PgService {
 			const addSql = ` UPDATE ${tablename} set ${updateParmsStr} WHERE ${updatewhereparm} RETURNING * `;
 
 			logger.debug(`update sql is ${addSql}`);
-			_self.client.query(addSql, addSqlParams, (err, res) => {
+			this.client.query(addSql, addSqlParams, (err, res) => {
 				if (err) {
 					logger.error('[INSERT ERROR] - ', err.message);
 					reject(err);
@@ -312,13 +314,13 @@ export class PgService {
 	/**
 	 *  Execute update or delete  sql.
 	 *  @param string  updateSql   the execute sql
+	 *  @param string  values   sql query parameters
 	 */
-	updateBySql(updateSql) {
-		const _self = this;
+	updateBySql(updateSql, values) {
 		return new Promise((resolve, reject) => {
 			logger.debug(`update sql is :  ${updateSql}`);
 
-			_self.client.query(updateSql, [], (err, res) => {
+			this.client.query(updateSql, values, (err, res) => {
 				if (err) {
 					logger.error('[INSERT ERROR] - ', err.message);
 					reject(err);
@@ -348,7 +350,6 @@ export class PgService {
 	 *
 	 */
 	getRowByPk(tablename, column, pkColumn, value) {
-		const _self = this;
 		return new Promise((resolve, reject) => {
 			if (column === '') {
 				column = '*';
@@ -356,7 +357,7 @@ export class PgService {
 
 			const sql = ` select  ${column} from ${tablename} where ${pkColumn} = ${value} `;
 
-			_self.client.query(sql, (err, res) => {
+			this.client.query(sql, (err, res) => {
 				if (err) {
 					reject(err);
 					return;
@@ -380,20 +381,13 @@ export class PgService {
 	 * @param unknown_type DB
 	 * @return unknown
 	 */
-	getRowByPkOne(sql) {
-		const _self = this;
+	getRowByPkOne(sql, values) {
 		return new Promise((resolve, reject) => {
-			// Var sql = ` select  ${column} from ${tablename} where ${pkColumn} = ${value} `
-
-			_self.client.query(sql, (err, res) => {
+			this.client.query(sql, values, (err, res) => {
 				if (err) {
 					reject(err);
 					return;
 				}
-
-				// Console.log(  `The solution is: ${rows.length }  `  );
-				logger.debug(` the getRowByPkOne sql ${sql}`);
-				// (` the getRowByPkOne sql ${sql}`)
 
 				if (res && res.rows && res.rows[0]) {
 					resolve(res.rows[0]);
@@ -414,19 +408,14 @@ export class PgService {
 	 *
 	 */
 	getRowsByCondition(tablename, column, condition, orderBy, limit) {
-		const _self = this;
 		return new Promise((resolve, reject) => {
 			if (column === '') {
 				column = '*';
 			}
 
 			let updatewhereparm = ' (1=1)  ';
-			const addSqlParams = [];
 
 			Object.keys(condition).forEach(k => {
-				const v = condition[k];
-
-				addSqlParams.push(v);
 				updatewhereparm += ` and ${k}=? `;
 			});
 
@@ -434,13 +423,12 @@ export class PgService {
 
 			logger.debug(` the search sql is : ${sql} `);
 
-			_self.client.query(sql, (err, res) => {
+			this.client.query(sql, (err, res) => {
 				if (err) {
 					reject(err);
 					return;
 				}
 
-				// Console.log(  `The solution is: ${rows.length }  `  );
 				logger.debug(' the getRowsByCondition ');
 
 				resolve(res.rows);
@@ -456,7 +444,6 @@ export class PgService {
 	 *
 	 */
 	getRowsBySQl(sqlcharacter, condition, limit) {
-		const _self = this;
 		return new Promise((resolve, reject) => {
 			let updatewhereparm = ' (1=1)  ';
 			const addSqlParams = [];
@@ -472,7 +459,7 @@ export class PgService {
 
 			logger.debug(` the search sql is : ${sql} `);
 
-			_self.client.query(sql, addSqlParams, (err, res) => {
+			this.client.query(sql, addSqlParams, (err, res) => {
 				if (err) {
 					reject(err);
 					return;
@@ -490,18 +477,18 @@ export class PgService {
 	 *
 	 *
 	 * @param {*} sql
+	 * @param {*} values
 	 * @returns
 	 * @memberof PgService
 	 */
-	getRowsBySQlQuery(sql) {
-		const _self = this;
+	getRowsBySQlQuery(sql, values) {
 		return new Promise((resolve, reject) => {
-			_self.client.query(sql, (err, res) => {
+			this.client.query(sql, values, (err, res) => {
 				if (err) {
 					reject(err);
 					return;
 				}
-				logger.debug(` the getRowsBySQlQuery ${sql}`);
+				logger.debug(` the getRowsBySQlQuery ${res.command}`);
 
 				if (res && res.rows) {
 					resolve(res.rows);
@@ -516,14 +503,13 @@ export class PgService {
 	 * Search table by sql and it's not condition
 	 *
 	 *
-	 * @param datatype sqlchareter   the table name
-	 * @param datatype condition       the search condition,it is sorted by array. exp condition = array("id"=>"1");
-	 * @param datatype limit         the page limit.
+	 * @param {datatype} sqlcharacter   the table name
+	 * @param {datatype} values        SQL query parameters
+	 * @param {datatype} limit         the page limit.
 	 *
 	 */
-	getRowsBySQlNoCondition(sqlcharacter, limit? ) : Promise<any>{
+	getRowsBySQlNoCondition(sqlcharacter, values, limit?): Promise<any> {
 		/* eslint-disable */
-		const _self = this;
 		return new Promise((resolve, reject) => {
 			let sql;
 			if (limit && sqlcharacter) {
@@ -534,13 +520,13 @@ export class PgService {
 				reject(null);
 				return;
 			}
-			_self.client.query(sql, (err, res) => {
+			this.client.query(sql, values, (err, res) => {
 				if (err) {
 					reject(err);
 					return;
 				}
 
-				logger.debug(` the getRowsBySQlNoCondition ${sql}`);
+				logger.debug(` the getRowsBySQlNoCondition ${sql} ${values}`);
 
 				if (res && res.rows) {
 					resolve(res.rows);
@@ -555,13 +541,12 @@ export class PgService {
 	/**
 	 * 自动橱窗日志查找/评价历史记录查找
 	 * @param unknown_type sql
-	 * @param unknown_type DB
+	 * @param unknown_type values
 	 * @return unknown
 	 */
-	getRowsBySQlCase(sql) {
-		const _self = this;
+	getRowsBySQlCase(sql, values) {
 		return new Promise((resolve, reject) => {
-			_self.client.query(sql, (err, res) => {
+			this.client.query(sql, values, (err, res) => {
 				if (err) {
 					reject(err);
 					return;
@@ -577,5 +562,4 @@ export class PgService {
 			});
 		});
 	}
-
 }
