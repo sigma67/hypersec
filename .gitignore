@@ -43,3 +43,4 @@ crypto-config
 **/specs/templates/
 **/specs/ytt/
 PTE
+.editorconfig

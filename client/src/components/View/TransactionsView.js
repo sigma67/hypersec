@@ -2,13 +2,8 @@
  *    SPDX-License-Identifier: Apache-2.0
  */
 /* eslint-disable */
-import React, {
-	useState,
-	useEffect,
-	useMemo,
-	useCallback
-} from 'react';
-import { makeStyles  } from '@material-ui/core/styles';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
 import moment from 'moment';
 import MomentUtils from '@date-io/moment';
 import Transactions from '../Lists/Transactions';
@@ -43,13 +38,14 @@ import {
 	transactionListType,
 	getMetricsType
 } from '../types';
+import { timeParse, timeFormat } from 'd3-time-format';
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
 	backdrop: {
-    zIndex: theme.zIndex.drawer + 1,
-    color: '#fff',
-  },
+		zIndex: theme.zIndex.drawer + 1,
+		color: '#fff'
+	},
 	view: {
 		paddingTop: 85,
 		paddingLeft: 0,
@@ -64,14 +60,14 @@ const useStyles = makeStyles(theme => ({
 	},
 	smallSection: {
 		marginBottom: '1%',
-/* 		textAlign: 'center', */
+		/* 		textAlign: 'center', */
 		color: theme.palette === 'dark' ? '#ffffff' : undefined,
 		backgroundColor: theme.palette === 'dark' ? '#3c3558' : undefined
 	},
 	largeSection: {
 		height:
 			0.8 * window.screen.availHeight - (0.8 * window.screen.availHeight) / 8,
-		marginBottom: '1%',
+		marginBottom: '1.5%',
 		textAlign: 'center',
 		color: theme.palette === 'dark' ? '#ffffff' : undefined,
 		backgroundColor: theme.palette === 'dark' ? '#3c3558' : undefined
@@ -85,7 +81,7 @@ const useStyles = makeStyles(theme => ({
 		}
 	},
 	brushRow: {
-		marginBottom: '2rem',
+		marginBottom: '1rem'
 	},
 	brushCol: {
 		display: 'flex',
@@ -93,7 +89,7 @@ const useStyles = makeStyles(theme => ({
 		height: '5rem'
 	},
 	detailsRow: {
-		marginBottom: '.5rem'
+		marginBottom: '2.5rem'
 	},
 	detailsCol: {
 		display: 'flex',
@@ -104,14 +100,14 @@ const useStyles = makeStyles(theme => ({
 		marginTop: '10px',
 		position: 'relative',
 		width: '100%'
-  },
-  buttonProgress: {
+	},
+	buttonProgress: {
 		color: '#ffffff',
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginTop: -12,
-    marginLeft: -12,
+		position: 'absolute',
+		top: '50%',
+		left: '50%',
+		marginTop: -12,
+		marginLeft: -12
 	},
 	activeBinMs: {
 		color: '#ffffff',
@@ -121,7 +117,7 @@ const useStyles = makeStyles(theme => ({
 		}
 	},
 	inactiveBinMs: {
-		backgroundColor: 'ffffff',
+		backgroundColor: 'ffffff'
 	}
 }));
 
@@ -153,29 +149,59 @@ function TransactionsView({
 	const [selectedFrom, setSelectedFrom] = useState(start);
 	const [selectedTo, setSelectedTo] = useState(end);
 
+	const orgsColorScale = useMemo(() => {
+		return scaleOrdinal({
+			range: ['#58c5c2', ...schemePastel2],
+			domain: ['total', ...organisations]
+		});
+	}, [organisations]);
 
-	const orgsColorScale = useMemo(
-		() => {
-			return scaleOrdinal({
-				range: ['#58c5c2', ...schemePastel2],
-				domain: ['total', ...organisations]
-			})},
-		[organisations]
-	);
+	const orgsHoverColorScale = useMemo(() => {
+		return scaleOrdinal({
+			range: ['#58c5c2', ...schemeSet2],
+			domain: ['total', ...organisations]
+		});
+	}, [organisations]);
 
-	const orgsHoverColorScale = useMemo(
-		() => {
-			return scaleOrdinal({
-				range: ['#58c5c2', ...schemeSet2],
-				domain: ['total', ...organisations]
-			})},
-		[organisations]
-	);
+	const binTimeFormat = date => {
+		switch (msPerBin) {
+			case 60000:
+				return timeFormat(
+					`${moment(date).format('MMM Do')}, ${moment(date).hours()}:${moment(
+						date
+					).minutes()}-${moment(date).hours()}:${moment(
+						date + msPerBin
+					).minutes()}`
+				);
+			case 3600000:
+				return timeFormat(
+					`${moment(date).format('MMM Do')}, ${moment(
+						date
+					).hours()}:00-${moment(date + msPerBin).hours()}:00`
+				);
+			case 43200000:
+				return timeFormat(
+					`${moment(date).format('MMM Do')}, ${moment(
+						date
+					).hours()}:00-${moment(date + msPerBin).hours()}:00`
+				);
+			case 86400000:
+				return timeFormat(
+					`${moment(date).format('MMM Do')}, ${moment(
+						date
+					).hours()}:00 - ${moment(date + msPerBin).format('MMM Do')}, ${moment(
+						date
+					).hours()}:00`
+				);
+		}
+	};
 
 	useEffect(() => {
-		async function fetchData() { await handleSearch(); }
+		async function fetchData() {
+			await handleSearch();
+		}
 		fetchData();
-	}, [start, end])
+	}, [start, end]);
 
 	useEffect(() => {
 		const tempOrganisations = [];
@@ -201,33 +227,19 @@ function TransactionsView({
 	useEffect(() => {
 		getAvgTransactionSize();
 		binTrx(transactions);
-		test(transactions);
 	}, [transactions, msPerBin, binTrx]);
 
 	useEffect(() => {
-		if(displayedOrgs.length === 0) { setDisplayedOrgs(organisations); }
+		if (displayedOrgs.length === 0) {
+			setDisplayedOrgs(organisations);
+		}
 	}, [organisations]);
-
-	const test = useCallback(() => {
-		const senderBins = [];
-		transactions.map((transaction) => {
-			if (!transaction.sender) return;
-			const currentBin = senderBins.find(bin => bin.commonName === transaction.sender.commonName);
-			if (currentBin) {
-				currentBin.transactions.push(transaction);
-			} else {
-				transaction.sender.transactions = [transaction];
-				senderBins.push(transaction.sender);
-			}
-        });
-		//onst senderHeatmap
-	}, [transactions]);
 
 	const bins = useMemo(() => {
 		let currentBinTime = Math.floor(start.valueOf() / msPerBin) * msPerBin;
 		let bins = [];
 		while (currentBinTime < end) {
-			const bin = {timestamp: currentBinTime, total: []};
+			const bin = { timestamp: currentBinTime, total: [] };
 			organisations.forEach(org => {
 				bin[org] = [];
 			});
@@ -239,12 +251,18 @@ function TransactionsView({
 
 	const binTrx = useCallback(() => {
 		const startBin = Math.floor(start.valueOf() / msPerBin) * msPerBin;
-		const endBin = Math.floor(end.valueOf() / msPerBin)* msPerBin;
-		transactions.forEach((transaction) => {
-			const trxBinTimeStamp = Math.floor(moment.utc(transaction.createdt).valueOf() / msPerBin) * msPerBin;
+		const endBin = Math.floor(end.valueOf() / msPerBin) * msPerBin;
+		transactions.forEach(transaction => {
+			const trxBinTimeStamp =
+				Math.floor(moment.utc(transaction.createdt).valueOf() / msPerBin) *
+				msPerBin;
 			if (trxBinTimeStamp < startBin || trxBinTimeStamp > endBin) return;
-			bins.find(bin => bin.timestamp === trxBinTimeStamp)['total'].push(transaction);
-			bins.find(bin => bin.timestamp === trxBinTimeStamp)[transaction.creator_msp_id].push(transaction);
+			bins
+				.find(bin => bin.timestamp === trxBinTimeStamp)
+				['total'].push(transaction);
+			bins
+				.find(bin => bin.timestamp === trxBinTimeStamp)
+				[transaction.creator_msp_id].push(transaction);
 		});
 		setBinnedTrx(bins);
 		setSelectedBins(bins);
@@ -284,17 +302,14 @@ function TransactionsView({
 	const handleSearch = async () => {
 		setLoading(true);
 		await searchTransactionList();
-		await getMetrics(
-			start / 1000,
-			end / 1000
-		);
+		await getMetrics(start / 1000, end / 1000);
 		setLoading(false);
 	};
 
-	const handleBrushSelection = (selectedBinTimestamps) => {
+	const handleBrushSelection = selectedBinTimestamps => {
 		const trxSelection = [];
 		const mtrxSelection = [];
-		if(selectedBinTimestamps.length < 1) {
+		if (selectedBinTimestamps.length < 1) {
 			setSelectedBins(binnedTrx);
 			setSelectedTrx(transactions);
 			setSelectedMtrx(metrics);
@@ -303,213 +318,224 @@ function TransactionsView({
 			return;
 		}
 		metrics.forEach(bin => {
-			if (selectedBinTimestamps.indexOf( Math.floor((bin.time*1000) / msPerBin) * msPerBin) > -1) {
+			if (
+				selectedBinTimestamps.indexOf(
+					Math.floor((bin.time * 1000) / msPerBin) * msPerBin
+				) > -1
+			) {
 				mtrxSelection.push(bin);
 			}
-		})
+		});
 		binnedTrx.forEach(bin => {
 			if (selectedBinTimestamps.indexOf(bin.timestamp) > -1) {
 				trxSelection.push(...bin.total);
 			}
 		});
-		setSelectedBins(binnedTrx.filter(bin => selectedBinTimestamps.indexOf(bin.timestamp) > -1));
+		setSelectedBins(
+			binnedTrx.filter(bin => selectedBinTimestamps.indexOf(bin.timestamp) > -1)
+		);
 		setSelectedTrx(trxSelection);
 		setSelectedMtrx(mtrxSelection);
 		setSelectedFrom(selectedBinTimestamps[0]);
 		setSelectedTo(
-			selectedBinTimestamps[selectedBinTimestamps.length - 1] ?
-			selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin / 2 :
-			selectedBinTimestamps[selectedBinTimestamps.length - 2] + msPerBin / 2
+			selectedBinTimestamps[selectedBinTimestamps.length - 1]
+				? selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin / 2
+				: selectedBinTimestamps[selectedBinTimestamps.length - 2] + msPerBin / 2
 		);
 	};
 
-	const handleMsPerBinChange = (event) => {
+	const handleMsPerBinChange = event => {
 		setMsPerBin(event.target.value);
-	}
+	};
 
 	return (
 		<div className={classes.view}>
-		<Backdrop className={classes.backdrop} open={loading}>
-			<CircularProgress color="inherit" />
-		</Backdrop>
-		<Row>
-			<Col sm="12" className={classes.root}>
-				<Card className={`${classes.smallSection}`} variant="outlined">
-					<CardContent>
-						<Row>
-							<Col xs={5}>
-								<MuiPickersUtilsProvider utils={MomentUtils}>
-									<DateTimePicker
-										label="From"
-										value={start}
-										format="LLL"
-										style={{ width: 100 + '%' }}
-										onChange={async (date) => {
-											if (date > end) {
-												setErr(true);
-												setStart(date);
-												setSelectedFrom(date);
-											} else {
-												setStart(date);
-												setSelectedFrom(date);
-												await handleSearch();
-												setErr(false);
-											}
-										}}
-										InputProps={{
-											endAdornment: (
-												<InputAdornment position="end">
-													<IconButton>
-														<Today />
-													</IconButton>
-												</InputAdornment>
-											)
-										}}
+			<Backdrop className={classes.backdrop} open={loading}>
+				<CircularProgress color="inherit" />
+			</Backdrop>
+			<Row>
+				<Col sm="12" className={classes.root}>
+					<Card className={`${classes.smallSection}`} variant="outlined">
+						<CardContent>
+							<Row>
+								<Col xs={5}>
+									<MuiPickersUtilsProvider utils={MomentUtils}>
+										<DateTimePicker
+											label="From"
+											value={start}
+											format="LLL"
+											style={{ width: 100 + '%' }}
+											onChange={async date => {
+												if (date > end) {
+													setErr(true);
+													setStart(date);
+													setSelectedFrom(date);
+												} else {
+													setStart(date);
+													setSelectedFrom(date);
+													await handleSearch();
+													setErr(false);
+												}
+											}}
+											InputProps={{
+												endAdornment: (
+													<InputAdornment position="end">
+														<IconButton>
+															<Today />
+														</IconButton>
+													</InputAdornment>
+												)
+											}}
+										/>
+									</MuiPickersUtilsProvider>
+								</Col>
+								<Col xs={5}>
+									<MuiPickersUtilsProvider utils={MomentUtils}>
+										<DateTimePicker
+											label="To"
+											value={end}
+											format="LLL"
+											style={{ width: 100 + '%' }}
+											onChange={async date => {
+												if (date < start) {
+													setErr(true);
+													setSelectedTo(date);
+													setEnd(date);
+												} else {
+													setEnd(date);
+													setSelectedTo(date);
+													await handleSearch();
+													setErr(false);
+												}
+											}}
+											InputProps={{
+												endAdornment: (
+													<InputAdornment position="end">
+														<IconButton>
+															<Event />
+														</IconButton>
+													</InputAdornment>
+												)
+											}}
+										/>
+									</MuiPickersUtilsProvider>
+								</Col>
+								<Col xs={2}>
+									<FormControl style={{ width: 100 + '%' }}>
+										<InputLabel id="ms-per-bin-select-label">
+											Transactions per
+										</InputLabel>
+										<Select
+											labelId="ms-per-bin-select-label"
+											id="ms-per-bin-select"
+											value={msPerBin}
+											onChange={handleMsPerBinChange}
+										>
+											<MenuItem value={60000}>1 minute</MenuItem>
+											<MenuItem value={3600000}>1 hour</MenuItem>
+											<MenuItem value={43200000}>12 hours</MenuItem>
+											<MenuItem value={86400000}>24 hours</MenuItem>
+										</Select>
+									</FormControl>
+								</Col>
+							</Row>
+						</CardContent>
+					</Card>
+				</Col>
+			</Row>
+			<Row>
+				<Col sm="12" className={classes.root}>
+					<Card className={`${classes.smallSection}`} variante="outlined">
+						<CardContent>
+							<Row className={classes.brushRow}>
+								<Col sm="12" className={classes.brushCol}>
+									<ParentSize debounceTime={10}>
+										{({ width, height }) => (
+											<TransactionBrush
+												width={width}
+												height={height}
+												data={binnedTrx}
+												onBrushSelectionChange={handleBrushSelection}
+												selectedTrxBins={selectedBins}
+												formatBinTime={binTimeFormat}
+											/>
+										)}
+									</ParentSize>
+								</Col>
+							</Row>
+							<Row className={classes.detailsRow}>
+								<Col sm="4" className={classes.detailsCol}>
+									<ParentSize debounceTime={10}>
+										{({ width, height }) => (
+											<TransactionCount
+												width={width}
+												height={height}
+												colorScale={orgsColorScale}
+												hoverColorScale={orgsHoverColorScale}
+												data={selectedBins}
+												msPerBin={msPerBin}
+												displayedOrgs={displayedOrgs}
+												onDisplayedOrgsChange={handleDisplayedOrgsChanged}
+												formatBinTime={binTimeFormat}
+											/>
+										)}
+									</ParentSize>
+								</Col>
+								<Col sm="4" className={classes.detailsCol}>
+									<ParentSize debounceTime={10}>
+										{({ width, height }) => (
+											<TransactionSize
+												width={width}
+												height={height}
+												colorScale={orgsColorScale}
+												data={selectedTrx}
+												from={selectedFrom}
+												to={selectedTo}
+												avgTrxSize={avgTrxSize || 1}
+												displayedOrgs={displayedOrgs}
+												onDisplayedOrgsChange={handleDisplayedOrgsChanged}
+											/>
+										)}
+									</ParentSize>
+								</Col>
+								<Col sm="4" className={classes.detailsCol}>
+									<ParentSize debounceTime={10}>
+										{({ width, height }) => (
+											<TransactionTime
+												width={width}
+												height={height}
+												data={selectedMtrx}
+												from={selectedFrom}
+												to={selectedTo}
+											/>
+										)}
+									</ParentSize>
+								</Col>
+							</Row>
+						</CardContent>
+					</Card>
+				</Col>
+			</Row>
+			<Row>
+				<Col sm="12">
+					<Card className={`${classes.smallSection}`} variant="outlined">
+						<CardContent>
+							<Row>
+								<Col xs={12}>
+									<Transactions
+										data={selectedTrx}
+										currentChannel={currentChannel}
+										transactionList={transactionList}
+										transaction={transaction}
+										getTransaction={getTransaction}
 									/>
-								</MuiPickersUtilsProvider>
-							</Col>
-							<Col xs={5}>
-								<MuiPickersUtilsProvider utils={MomentUtils}>
-									<DateTimePicker
-										label="To"
-										value={end}
-										format="LLL"
-										style={{ width: 100 + '%' }}
-										onChange={async (date) => {
-											if (date < start) {
-												setErr(true);
-												setSelectedTo(date);
-												setEnd(date);
-											} else {
-												setEnd(date);
-												setSelectedTo(date);
-												await handleSearch();
-												setErr(false);
-											}
-										}}
-										InputProps={{
-											endAdornment: (
-												<InputAdornment position="end">
-													<IconButton>
-														<Event />
-													</IconButton>
-												</InputAdornment>
-											)
-										}}
-									/>
-								</MuiPickersUtilsProvider>
-							</Col>
-							<Col xs={2}>
-								<FormControl style={{ width: 100 + '%' }}>
-									<InputLabel id="ms-per-bin-select-label">Transactions per</InputLabel>
-									<Select
-										labelId="ms-per-bin-select-label"
-										id="ms-per-bin-select"
-										value={msPerBin}
-										onChange={handleMsPerBinChange}
-									>
-										<MenuItem value={60000}>1 minute</MenuItem>
-										<MenuItem value={3600000}>1 hour</MenuItem>
-										<MenuItem value={43200000}>12 hours</MenuItem>
-										<MenuItem value={86400000}>24 hours</MenuItem>
-									</Select>
-								</FormControl>
-							</Col>
-						</Row>
-					</CardContent>
-				</Card>
-			</Col>
-		</Row>
-		<Row>
-			<Col sm="12" className={classes.root}>
-				<Card className={`${classes.smallSection}`} variante="outlined">
-					<CardContent>
-						<Row className={classes.brushRow}>
-							<Col sm="12" className={classes.brushCol}>
-								<ParentSize debounceTime={10}>
-									{({ width, height }) => (
-										<TransactionBrush
-											width={width}
-											height={height}
-											data={binnedTrx}
-											onBrushSelectionChange={handleBrushSelection}
-										/>
-									)}
-								</ParentSize>
-							</Col>
-						</Row>
-						<Row className={classes.detailsRow}>
-							<Col sm="4" className={classes.detailsCol}>
-								<ParentSize debounceTime={10}>
-									{({ width, height }) => (
-										<TransactionCount
-											width={width}
-											height={height}
-											colorScale={orgsColorScale}
-											hoverColorScale={orgsHoverColorScale}
-											data={selectedBins}
-											msPerBin={msPerBin}
-											displayedOrgs={displayedOrgs}
-											onDisplayedOrgsChange={handleDisplayedOrgsChanged}
-										/>
-									)}
-								</ParentSize>
-							</Col>
-							<Col sm="4" className={classes.detailsCol}>
-								<ParentSize debounceTime={10}>
-								{({ width, height }) => (
-										<TransactionSize
-											width={width}
-											height={height}
-											colorScale={orgsColorScale}
-											data={selectedTrx}
-											from={selectedFrom}
-											to={selectedTo}
-											avgTrxSize={avgTrxSize || 1}
-											displayedOrgs={displayedOrgs}
-											onDisplayedOrgsChange={handleDisplayedOrgsChanged}
-										/>
-									)}
-								</ParentSize>
-							</Col>
-							<Col sm="4" className={classes.detailsCol}>
-								<ParentSize debounceTime={10}>
-									{({ width, height }) => (
-										<TransactionTime
-											width={width}
-											height={height}
-											data={selectedMtrx}
-											from={selectedFrom}
-											to={selectedTo}
-										/>
-									)}
-								</ParentSize>
-							</Col>
-						</Row>
-					</CardContent>
-				</Card>
-			</Col>
-		</Row>
-		<Row>
-			<Col sm="12">
-				<Card className={`${classes.smallSection}`} variant="outlined">
-					<CardContent>
-						<Row>
-							<Col xs={12}>
-								<Transactions
-									data = {selectedTrx}
-									currentChannel={currentChannel}
-									transactionList={transactionList}
-									transaction={transaction}
-									getTransaction={getTransaction}
-								/>
-							</Col>
-						</Row>
-					</CardContent>
-				</Card>
-			</Col>
-		</Row>
-	</div>
+								</Col>
+							</Row>
+						</CardContent>
+					</Card>
+				</Col>
+			</Row>
+		</div>
 	);
 }
 
@@ -520,7 +546,7 @@ TransactionsView.propTypes = {
 	getTransactionList: getTransactionListType,
 	transaction: transactionType,
 	transactionList: transactionListType.isRequired,
-	getMetrics: getMetricsType,
+	getMetrics: getMetricsType
 };
 
 export default TransactionsView;

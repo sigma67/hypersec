@@ -11,9 +11,14 @@ import { Group } from '@visx/group';
 import { GridRows, GridColumns } from '@visx/grid';
 import { scaleOrdinal } from '@visx/scale';
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
-import { withTooltip, Tooltip, TooltipWithBounds, defaultStyles } from '@visx/tooltip';
+import {
+	withTooltip,
+	Tooltip,
+	TooltipWithBounds,
+	defaultStyles
+} from '@visx/tooltip';
 import { localPoint } from '@visx/event';
-import { schemePastel2 } from 'd3-scale-chromatic';
+import { schemePastel1 } from 'd3-scale-chromatic';
 import { max, bisector } from 'd3-array';
 import { stack } from 'd3-shape';
 import moment from 'moment';
@@ -29,7 +34,7 @@ const useStyles = makeStyles(theme => ({
 		cursor: 'pointer',
 		height: '100%',
 		display: 'flex'
-	},
+	}
 }));
 
 /**
@@ -39,111 +44,237 @@ const defaultMargin = { top: 10, bottom: 40, left: 50, right: 0 };
 const keys = ['endorser_proposal', 'broadcast_enqueue', 'broadcast_validate'];
 const legendGlyphSize = 15;
 
-export default withTooltip(({
-	width,
-	height,
-	margin = defaultMargin,
-	data,
-	from,
-	to,
-	showTooltip,
-  hideTooltip,
-  tooltipData,
-  tooltipLeft = 0,
-}) => {
-	const classes = useStyles();
+export default withTooltip(
+	({
+		width,
+		height,
+		margin = defaultMargin,
+		data,
+		from,
+		to,
+		showTooltip,
+		hideTooltip,
+		tooltipData,
+		tooltipLeft = 0
+	}) => {
+		const classes = useStyles();
 
-	const xMax = width - margin.left - margin.right;
-	const yMax = height - margin.top - margin.bottom;
+		const xMax = width - margin.left - margin.right;
+		const yMax = height - margin.top - margin.bottom;
 
-	const [yMaxValue, setYMaxValue] = useState(0.006);
+		const [yMaxValue, setYMaxValue] = useState(0);
 
-	const [displayedKeys, setDisplayedKeys] = useState(keys);
+		const [displayedKeys, setDisplayedKeys] = useState(keys);
 
-	const areaColorScale = useMemo(
-		() => {
+		const areaColorScale = useMemo(() => {
 			return scaleOrdinal({
-				range: schemePastel2,
+				range: schemePastel1,
 				domain: keys
-			})},
-		[]
-	);
+			});
+		}, []);
 
-	const xScale = useMemo(
-		() =>
-			scaleTime({
-				range: [0, xMax],
-				domain: [from, to]
-			}),
-		[xMax, from, to]
-	);
+		const xScale = useMemo(
+			() =>
+				scaleTime({
+					range: [0, xMax],
+					domain: [from, to]
+				}),
+			[xMax, from, to]
+		);
 
-	const yScale = useMemo(
-		() =>
-			scaleLinear({
-				range: [yMax, 0],
-				domain: [0, yMaxValue]
-			}),
-		[yMax, yMaxValue]
-	);
+		const yScale = useMemo(
+			() =>
+				scaleLinear({
+					range: [yMax, 0],
+					domain: [0, yMaxValue]
+				}),
+			[yMax, yMaxValue]
+		);
 
-	const handleDisplayedMetricsChange = useCallback(
-		(metric) => {
-		const tempKeys = [...displayedKeys];
-		const index = tempKeys.indexOf(metric);
-		index > -1 ? tempKeys.splice(index, 1) : tempKeys.splice(keys.indexOf(metric), 0, metric);
-		setDisplayedKeys(tempKeys);
-	}, [displayedKeys]);
+		const handleDisplayedMetricsChange = useCallback(
+			metric => {
+				const tempKeys = [...displayedKeys];
+				const index = tempKeys.indexOf(metric);
+				index > -1
+					? tempKeys.splice(index, 1)
+					: tempKeys.splice(keys.indexOf(metric), 0, metric);
+				setDisplayedKeys(tempKeys);
+			},
+			[displayedKeys]
+		);
 
-	const handleTooltip = useCallback(
-		(event) => {
-			const point = localPoint(event) || { x: 0, y: 0 };
-			point.x -= margin.left
-			const x0 = xScale.invert(point.x);
-			const bisectDate = bisector(d => new Date(d.time*1000)).left;
-			const index = bisectDate(data, x0, 1);
-			const stacks = stack().keys(displayedKeys);
-			const dataStacks = stacks(data);
-			const tooltipCircles = [];
-			keys.forEach(key => {
-				const keyIndex = displayedKeys.indexOf(key);
-				if (keyIndex > -1) {
-					const d0 = dataStacks[keyIndex][index-1];
-					const d1 = dataStacks[keyIndex][index-1];
-					let d = d0;
-					if (d1 && d1.time*1000) {
-						d = x0.valueOf() - d0.time*1000 > d1.time*1000 - x0.valueOf() ? d1 : d0;
+		const handleTooltip = useCallback(
+			event => {
+				const point = localPoint(event) || { x: 0, y: 0 };
+				point.x -= margin.left;
+				const x0 = xScale.invert(point.x);
+				const bisectDate = bisector(d => new Date(d.time * 1000)).left;
+				const index = bisectDate(data, x0, 1);
+				const stacks = stack().keys(displayedKeys);
+				const dataStacks = stacks(data);
+				const tooltipCircles = [];
+				keys.forEach(key => {
+					const keyIndex = displayedKeys.indexOf(key);
+					if (keyIndex > -1) {
+						const d0 = dataStacks[keyIndex][index - 1];
+						const d1 = dataStacks[keyIndex][index - 1];
+						let d = d0;
+						if (d1 && d1.time * 1000) {
+							d =
+								x0.valueOf() - d0.time * 1000 > d1.time * 1000 - x0.valueOf()
+									? d1
+									: d0;
+						}
+						tooltipCircles.push({
+							key: key,
+							value: (d['data'][key] * 1000).toFixed(2),
+							time: d['data'].time * 1000,
+							yValue: yScale(d[1])
+						});
 					}
-					tooltipCircles.push({key: key, value: (d['data'][key] * 1000).toFixed(2), time: d['data'].time*1000, yValue: yScale(d[1])});
-				}
-			})
-			showTooltip({
-				tooltipData: tooltipCircles,
-				tooltipLeft: point.x,
-			})
-		}, [showTooltip, data, margin.left, xScale, yScale, displayedKeys]
-	);
+				});
+				showTooltip({
+					tooltipData: tooltipCircles,
+					tooltipLeft: point.x
+				});
+			},
+			[showTooltip, data, margin.left, xScale, yScale, displayedKeys]
+		);
 
-	useEffect(() => {
-		setYMaxValue(data ? max(data, d => parseFloat(d.endorser_proposal) + parseFloat(d.broadcast_enqueue) + parseFloat(d.broadcast_validate)) : 0);
-	}, [data])
+		useEffect(() => {
+			setYMaxValue(
+				data
+					? max(
+							data,
+							d =>
+								parseFloat(d.endorser_proposal) +
+								parseFloat(d.broadcast_enqueue) +
+								parseFloat(d.broadcast_validate)
+					  )
+					: 0
+			);
+		}, [data]);
 
-	return (
-		<React.Fragment>
-			<Grid container>
-				<Grid item xs={4}>
-					<Typography component='div'>
-						<Box m={1}>
-							Processing Time [s]
-						</Box>
-					</Typography>
-				</Grid>
-				<Grid item xs={8}>
-					<div className={classes.legend}>
-						<LegendOrdinal scale={areaColorScale}>
-							{labels => (
-								<div style={{ display: 'flex', flexDirection: 'row' }}>
-									{labels.map((label, i) => {
+		return (
+			<React.Fragment>
+				<Grid container>
+					<Grid item xs={12}>
+						<Typography component="div">
+							<Box m={1}>Processing Time [s]</Box>
+						</Typography>
+					</Grid>
+					<Grid item xs={12}>
+						<svg width={width} height={height}>
+							<Group top={margin.top} left={margin.left}>
+								<Group>
+									<GridRows
+										scale={yScale}
+										width={xMax}
+										strokeDasharray="3,3"
+										stroke="#919191"
+										strokeOpacity={0.3}
+										pointerEvents="none"
+										numTicks={4}
+									/>
+									<GridColumns
+										scale={xScale}
+										height={yMax}
+										strokeDasharray="3,3"
+										stroke="#919191"
+										strokeOpacity={0.3}
+										pointerEvents="none"
+										numTicks={width > 520 ? 8 : 5}
+									/>
+									<AreaStack
+										top={defaultMargin.top}
+										left={defaultMargin.left}
+										keys={displayedKeys}
+										data={data}
+										x={d => xScale(d.data.time * 1000)}
+										y0={d => yScale(d[0]) || 0}
+										y1={d => yScale(d[1]) || 0}
+										color={d => areaColorScale(d)}
+										curve={curveLinear}
+										onMouseMove={event => handleTooltip(event)}
+										onMouseLeave={() => hideTooltip()}
+									/>
+								</Group>
+								<AxisBottom
+									scale={xScale}
+									top={yMax}
+									numTicks={width > 520 ? 8 : 5}
+								/>
+								<AxisLeft scale={yScale} numTicks={4} />
+								{tooltipData && (
+									<Group>
+										<Line
+											from={{ x: tooltipLeft, y: 0 }}
+											to={{ x: tooltipLeft, y: yMax }}
+											stroke={'#919191'}
+											strokeWidth={1}
+											pointerEvents="none"
+											strokeDasharray="5,2"
+										/>
+										{tooltipData.map(keyCircle => (
+											<circle
+												key={`tooltip-circle-${keyCircle.key}`}
+												cx={tooltipLeft}
+												cy={keyCircle.yValue}
+												r={5}
+												fill={areaColorScale(keyCircle.key)}
+												stroke="white"
+												strokeWidth={0.5}
+												pointerEvents="none"
+											/>
+										))}
+									</Group>
+								)}
+							</Group>
+						</svg>
+						{tooltipData && (
+							<div>
+								{tooltipData.map(keyCircle => (
+									<TooltipWithBounds
+										key={`tooltip-circle-${keyCircle.key}-tooltip`}
+										top={keyCircle.yValue + 30}
+										left={
+											keyCircle === 'broadcast_enqueue'
+												? tooltipLeft - 47.5
+												: tooltipLeft + 47.5
+										}
+										style={{
+											...defaultStyles,
+											fontSize: '11px'
+										}}
+									>
+										{`${keyCircle.value} ms`}
+									</TooltipWithBounds>
+								))}
+
+								<Tooltip
+									top={height - 14}
+									left={tooltipLeft + 40}
+									style={{
+										...defaultStyles,
+										fontSize: '11px',
+										minWidth: 72,
+										textAlign: 'center',
+										transform: 'translateX(-50%)'
+									}}
+								>
+									<div>
+										{moment(tooltipData[0].time).format('MMM Do, kk:mm:ss:SSS')}
+									</div>
+								</Tooltip>
+							</div>
+						)}
+					</Grid>
+					<Grid item xs={12}>
+						<div className={classes.legend}>
+							<LegendOrdinal scale={areaColorScale}>
+								{labels => (
+									<div style={{ display: 'flex', flexDirection: 'row' }}>
+										{labels.map((label, i) => {
 											return (
 												<LegendItem
 													key={`legend-metric-${label.datum}`}
@@ -153,15 +284,19 @@ export default withTooltip(({
 													}}
 												>
 													<svg width={legendGlyphSize} height={legendGlyphSize}>
-													<rect
-														key={`legend-metric-${label.datum}`}
-														x = { 0 }
-														y = { 0 }
-														height = {legendGlyphSize }
-														width = { legendGlyphSize }
-														strokeWidth = { 2 }
-														stroke={ label.value }
-														fill={ displayedKeys.indexOf(label.datum) > -1 ? label.value : '#fff'	}
+														<rect
+															key={`legend-metric-${label.datum}`}
+															x={0}
+															y={0}
+															height={legendGlyphSize}
+															width={legendGlyphSize}
+															strokeWidth={2}
+															stroke={label.value}
+															fill={
+																displayedKeys.indexOf(label.datum) > -1
+																	? label.value
+																	: '#fff'
+															}
 														/>
 													</svg>
 													<LegendLabel
@@ -174,116 +309,15 @@ export default withTooltip(({
 														{label.text}
 													</LegendLabel>
 												</LegendItem>
-											)
-										}
-									)}
-								</div>
-							)}
-						</LegendOrdinal>
-					</div>
-				</Grid>
-				<Grid item xs={12}>
-					<svg width={width} height={height}>
-						<Group top={margin.top} left={margin.left}>
-							<Group>
-								<GridRows
-									scale={yScale}
-									width={xMax}
-									strokeDasharray="3,3"
-									stroke="#919191"
-									strokeOpacity={0.3}
-									pointerEvents="none"
-									numTicks={4} />
-								<GridColumns
-									scale={xScale}
-									height = {yMax}
-									strokeDasharray="3,3"
-									stroke="#919191"
-									strokeOpacity={0.3}
-									pointerEvents="none"
-									numTicks={width > 520 ? 8 : 5} />
-								<AreaStack
-									top={defaultMargin.top}
-									left={defaultMargin.left}
-									keys={displayedKeys}
-									data={data}
-									x={d => xScale(d.data.time*1000)}
-									y0={d => yScale(d[0]) || 0}
-									y1={d => yScale(d[1]) || 0}
-									color={d => areaColorScale(d)}
-									curve={curveLinear}
-									onMouseMove={ (event) => handleTooltip(event) }
-									onMouseLeave={ () => hideTooltip() }
-								/>
-							</Group>
-							<AxisBottom
-								scale={xScale}
-								top={yMax}
-								numTicks={width > 520 ? 8 : 5}
-							/>
-							<AxisLeft scale={yScale} numTicks={4} />
-							{tooltipData && (
-								<Group>
-									<Line
-										from={{ x: tooltipLeft, y: 0 }}
-										to={{ x: tooltipLeft, y: yMax }}
-										stroke={'#919191'}
-										strokeWidth={1}
-										pointerEvents="none"
-										strokeDasharray="5,2"
-									/>
-									{tooltipData.map(keyCircle => (
-										<circle
-											key={`tooltip-circle-${keyCircle.key}`}
-											cx={tooltipLeft}
-											cy={keyCircle.yValue}
-											r={5}
-											fill={areaColorScale(keyCircle.key)}
-											stroke="white"
-											strokeWidth={.5}
-											pointerEvents="none"
-											/>
-									))}
-								</Group>
-							)}
-						</Group>
-					</svg>
-					{ tooltipData && (
-						<div>
-							{tooltipData.map(keyCircle => (
-										<TooltipWithBounds
-										key={`tooltip-circle-${keyCircle.key}-tooltip`}
-										top={keyCircle.yValue + 30}
-										left={tooltipLeft + 47.5}
-										style={{
-											...defaultStyles,
-											fontSize: '11px',
-										}}
-									>
-										{`${keyCircle.value} ms`}
-									</TooltipWithBounds>
-									))}
-
-						<Tooltip
-							top={height - 14}
-							left={tooltipLeft + 40}
-							style={{
-								...defaultStyles,
-								fontSize: '11px',
-								minWidth: 72,
-								textAlign: 'center',
-								transform: 'translateX(-50%)',
-							}}
-						>
-							<div>
-								{moment(tooltipData[0].time).format('MMM Do, kk:mm:ss:SSS')}
-							</div>
-						</Tooltip>
+											);
+										})}
+									</div>
+								)}
+							</LegendOrdinal>
 						</div>
-
-					)}
+					</Grid>
 				</Grid>
-			</Grid>
-		</React.Fragment>
-	);
-});
+			</React.Fragment>
+		);
+	}
+);
