@@ -3,7 +3,6 @@
  */
 import actions from './actions';
 import { get } from '../../../services/request';
-
 /* istanbul ignore next */
 const blockList = channel => dispatch =>
 	get(`/api/blockAndTxList/${channel}/0`)
@@ -146,7 +145,6 @@ const transactionList = channel => dispatch =>
 const logs = peer => dispatch =>
 	get(`/api/logs/${peer}`)
 		.then(resp => {
-			console.log(resp);
 			if (resp.status === 500) {
 				dispatch(
 					actions.getErroMessage(
@@ -163,6 +161,24 @@ const logs = peer => dispatch =>
 			console.error(error);
 		});
 
+
+const issues = () => dispatch =>
+	get('/api/issues/')
+	.then(resp => {
+		if (resp.status === 401) {
+			dispatch(
+				actions.getErroMessage(
+					'401 Unauthorized: Please check your JIRA credentials'
+				)
+			);
+			return resp.body;
+		}
+		else{
+			dispatch(actions.getIssues(resp));
+		}
+	});
+
+
 export default {
 	blockList,
 	chaincodeList,
@@ -172,5 +188,6 @@ export default {
 	transactionList,
 	transactionListSearch,
 	blockListSearch,
-	logs
+	logs,
+	issues
 };

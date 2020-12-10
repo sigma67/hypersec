@@ -8,6 +8,10 @@
 		"username": "hppoc",
 		"passwd": "password"
 	},
+	"jira": {
+		"username": "",
+		"password": ""
+	},
 	"sync": {
 		"type": "local",
 		"platform": "fabric",

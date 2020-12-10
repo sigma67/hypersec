@@ -18,6 +18,7 @@ const authroutes = require('./rest/authroutes');
 const dbroutes = require('./rest/dbroutes');
 const metricroutes = require('./rest/metricroutes');
 const logroutes = require('./rest/logroutes');
+const externalroutes = require('./rest/externalroutes');
 const platformroutes = require('./rest/platformroutes');
 const adminroutes = require('./platform/fabric/rest/adminroutes');
 
@@ -127,6 +128,7 @@ class Explorer {
 			// Initializing the rest app services
 			await metricroutes(apirouter, platform);
 			await logroutes(apirouter, platform);
+			await externalroutes(apirouter, platform);
 			await dbroutes(apirouter, platform);
 			await platformroutes(apirouter, platform);
 			await adminroutes(apirouter, platform);

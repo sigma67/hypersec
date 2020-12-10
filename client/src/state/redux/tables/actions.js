@@ -47,6 +47,11 @@ const getLogs = logs => ({
 	payload: logs
 });
 
+const getIssues = issues => ({
+	type: types.ISSUES,
+	payload: issues
+});
+
 export default {
   getBlockList,
   getChaincodeList,
@@ -56,5 +61,6 @@ export default {
   getTransactionList,
   getBlockListSearch,
   getTransactionListSearch,
-	 getLogs
+   getLogs,
+   getIssues
 };

@@ -142,6 +142,21 @@ const logsReducer = ( state = initialState, action ) => {
 	}
 };
 
+const issuesReducer = ( state = initialState, action ) => {
+	switch (action.type) {
+		case types.ISSUES: {
+			return {
+				rows: action.payload.issues,
+				loaded: true,
+				errors: action.errors,
+			};
+		}
+		default: {
+			return state;
+		}
+	}
+};
+
 const reducer = combineReducers({
   blockList: blockListReducer,
   chaincodeList: chaincodeListReducer,
@@ -151,7 +166,8 @@ const reducer = combineReducers({
   transactionList: transactionListReducer,
   blockListSearch: blockListSearchReducer,
   transactionListSearch: transactionListSearchReducer,
-	 logs: logsReducer
+  logs: logsReducer,
+  issues: issuesReducer,
 });
 
 export default reducer;

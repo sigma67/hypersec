@@ -10,6 +10,7 @@ import Card from '@material-ui/core/Card';
 import Avatar from '@material-ui/core/Avatar';
 import ChartStats from '../Charts/ChartStats';
 import PeersHealth from '../Lists/PeersHealth';
+import Issues from '../Lists/Issues';
 import TimelineStream from '../Lists/TimelineStream';
 import OrgPieChart from '../Charts/OrgPieChart';
 import {
@@ -111,7 +112,9 @@ export class DashboardView extends Component {
 			dashStats,
 			peerStatus,
 			transactionByOrg,
-			blockActivity
+			blockActivity,
+			getIssues,
+			issues
 		} = this.props;
 		if (
 			blockList === undefined ||
@@ -155,7 +158,7 @@ export class DashboardView extends Component {
 	};
 
 	render() {
-		const { dashStats, peerStatus, blockActivity, transactionByOrg } = this.props;
+		const { dashStats, peerStatus, blockActivity, transactionByOrg, getIssues, issues } = this.props;
 		const { hasDbError, notifications } = this.state;
 		if (hasDbError) {
 			return (
@@ -239,7 +242,7 @@ export class DashboardView extends Component {
 					<Row>
 						<Col sm="6">
 							<Card className={classes.section}>
-								<PeersHealth peerStatus={peerStatus} />
+								<Issues getIssues={getIssues} issues={issues}/>
 							</Card>
 							<Card className={classes.section}>
 								<TimelineStream

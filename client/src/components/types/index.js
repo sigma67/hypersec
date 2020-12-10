@@ -113,6 +113,7 @@ export const getTransactionByOrgType = func;
 export const getTransactionPerHourType = func;
 export const getTransactionPerMinType = func;
 export const getMetricsType = func;
+export const getIssuesType = func;
 
 export const notificationsType = arrayOf(
 	shape({
@@ -190,3 +191,11 @@ export const transactionPerMinType = arrayOf(
 		datetime: string
 	})
 );
+
+export const issuesType = arrayOf(
+	shape({
+		id: string,
+		self: string,
+		fields: Object
+	})
+)

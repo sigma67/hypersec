@@ -52,7 +52,8 @@ const {
 	transactionListSelector,
 	blockListSearchSelector,
 	transactionListSearchSelector,
-	logsSelector
+	logsSelector,
+	issuesSelector
 } = tableSelectors;
 
 const styles = theme => {
@@ -87,7 +88,9 @@ export const Main = props => {
 		getMetrics,
 		metrics,
 		getLogs,
-		logs
+		logs,
+		getIssues,
+		issues
 	} = props;
 
 	const blocksViewProps = {
@@ -112,7 +115,9 @@ export const Main = props => {
 		dashStats,
 		peerStatus,
 		transactionByOrg,
-		blockActivity
+		blockActivity,
+		getIssues,
+		issues
 	};
 
 	const networkViewProps = {
@@ -226,16 +231,18 @@ export default compose(
 			transactionList: transactionListSelector(state),
 			blockListSearch: blockListSearchSelector(state),
 			transactionListSearch: transactionListSearchSelector(state),
+			blockActivity: blockActivitySelector(state),
 			metrics: metricSelector(state),
 			logs: logsSelector(state),
-			blockActivity: blockActivitySelector(state),
+			issues: issuesSelector(state)
 		}),
 		{
 			getTransaction: tableOperations.transaction,
 			getBlockListSearch: tableOperations.blockListSearch,
 			getTransactionListSearch: tableOperations.transactionListSearch,
 			getMetrics: chartOperations.metrics,
-			getLogs: tableOperations.logs
+			getLogs: tableOperations.logs,
+			getIssues: tableOperations.issues
 		}
 	)
 )(Main);
