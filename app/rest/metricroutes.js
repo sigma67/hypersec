@@ -51,14 +51,16 @@ const metricroutes = async function(router, platform) {
 			url: PROMETHEUS_API_URL + 'status/runtimeinfo'
 		});
 		const prometheusRuntimeInfo = JSON.parse(response.body).data;
-		const prometheusStartTime = new Date(prometheusRuntimeInfo.startTime).getTime();
+		const prometheusStartTime = new Date(
+			prometheusRuntimeInfo.startTime
+		).getTime();
 		req.query.start = start < prometheusStartTime ? start : prometheusStartTime;
 		req.query.step = Math.ceil((req.query.end - start) / 1000).toString();
 		let metrics = await Promise.all(
 			[
 				'sum(rate(endorser_proposal_duration_sum[5m]))/sum(rate(endorser_proposal_duration_count[5m]))',
-				'rate(broadcast_enqueue_duration_sum[5m])/rate(broadcast_enqueue_duration_count[5m])',
-				'rate(broadcast_validate_duration_sum[5m])/rate(broadcast_validate_duration_count[5m])'
+				'rate(broadcast_enqueue_duration_sum{type="ENDORSER_TRANSACTION"}[5m])/rate(broadcast_enqueue_duration_count{type="ENDORSER_TRANSACTION"}[5m])',
+				'rate(broadcast_validate_duration_sum{type="ENDORSER_TRANSACTION"}[5m])/rate(broadcast_validate_duration_count{type="ENDORSER_TRANSACTION"}[5m])'
 			].map(q => {
 				req.query.query = q;
 				return get({
@@ -71,7 +73,7 @@ const metricroutes = async function(router, platform) {
 			metrics = metrics.map(m => JSON.parse(m.body).data.result[0].values);
 			const lengths = metrics.map(m => m.length);
 			const minLength = Math.min(...lengths);
-			if(minLength !== Math.max(...lengths)){
+			if (minLength !== Math.max(...lengths)) {
 				metrics = metrics.map(m => m.slice(m.length - minLength));
 			}
 			const processed = new Array(minLength);
