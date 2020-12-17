@@ -44,6 +44,14 @@ const metricroutes = async function(router, platform) {
 		);
 	});
 
+
+	/**
+	 * Metrics for transaction charts
+	 * GET /metrics
+	 * 
+	 * Response:
+	 * Array of JSONs with time points and corresponding metrics
+	 */
 	router.get('/charts/txprocessing', async (req, res) => {
 		const get = util.promisify(request.get);
 		const start = req.query.start;
@@ -90,6 +98,68 @@ const metricroutes = async function(router, platform) {
 			res.json(e);
 		}
 	});
-};
+
+	/**
+	 * Metrics for peer chart
+	 * GET /metrics
+	 * 
+	 * Response:
+	 * Array of JSONs with time points and corresponding metrics
+	 */
+	router.get('/charts/peers', async (req, res) => {
+		const get = util.promisify(request.get);
+		const current = req.query.current;
+		const reference = req.query.reference;
+		if(!(current && reference)){
+			return requtil.invalidRequest(req, res);
+		}
+		const queries_targets = [
+			"peer",
+			"orderer",
+			"peer"
+		];
+		const queries_raw = [
+			'rate(gossip_comm_messages_received[%TIME%])',
+			'rate(grpc_server_stream_messages_sent{service="protos_Deliver", method="Deliver"}[%TIME%])',
+			'rate(grpc_server_stream_messages_sent{service="orderer_AtomicBroadcast", method="Deliver"}[%TIME%])'
+		]
+		let queries = [];
+		for(const q of queries_raw){
+			queries.push(q.replace(/%TIME%/g, current))
+			queries.push(q.replace(/%TIME%/g, reference))
+		}
+		
+		let metrics = await Promise.all(
+			queries.map(q => {
+				return get({
+					url: PROMETHEUS_API_URL + 'query',
+					qs: {query: q}
+				});
+			})
+		);
+
+		try {
+			metrics = metrics.map(
+				m => JSON.parse(m.body).data.result[0]
+			)
+			let processed = Array(queries_raw.length);
+			for(let i = 0; i < queries_raw.length; i++){
+				let j = i * 2;
+				let current = parseFloat(metrics[j].value[1])
+				let reference = parseFloat(metrics[j+1].value[1])
+				processed[i] = {
+					source: metrics[j].metric.instance,
+					target: queries_targets[i],
+					current: current,
+					reference: reference,
+					deviation: current / reference
+				}
+			}
+			res.json(processed);
+		} catch (e) {
+			res.json(e);
+		}
+	})
+}
 
 module.exports = metricroutes;
