@@ -111,10 +111,12 @@ class Proxy {
 				logger.debug('getPeersStatus >> ', e);
 			}
 		}
-
+		const peerConfigs = client.getPeersConfig();
+		const peerNames = peerConfigs.map(p => p.name)
 		const peers = [];
-
+		
 		for (const node of nodes) {
+			node.connected = peerNames.includes(node.server_hostname);
 			if (node.peer_type === 'PEER') {
 				node.status = 'DOWN';
 				if (discover_results && discover_results.peers_by_org) {

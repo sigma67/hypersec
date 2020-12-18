@@ -297,6 +297,16 @@ class FabricClient {
 	getNetworkConfig() {
 		return this.config.getConfig();
 	}
+
+	/**
+	 *
+	 *
+	 * @returns
+	 * @memberof FabricClient
+	 */
+	getPeersConfig(){
+		return this.config.getPeersConfig();
+	}
 }
 
 module.exports = FabricClient;
