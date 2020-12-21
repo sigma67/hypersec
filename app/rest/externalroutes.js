@@ -23,9 +23,10 @@ const externalroutes = async function(router, platform) {
 			get({
 				url: `https://${user}:${pass}@jira.hyperledger.org/rest/api/2/search`,
 				qs: {
-					jql: 'project = FAB AND issuetype = Bug AND status in ("In Progress",Closed,"To Do",Returned,"In CR Review") '
-						 + 'ORDER BY resolved DESC, updated DESC',
-					fields: 'summary,description,priority'
+					jql: 'project = FAB AND issuetype = Bug AND priority in (Highest, High) '
+						 + 'AND status in ("In Progress",Closed,"To Do",Returned,"In CR Review") '
+						 + 'ORDER BY updated DESC',
+					fields: 'summary,description,priority,reporter,created,updated'
 				}
 			}, (err, response, body) => {
 				if (err) {
