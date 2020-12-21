@@ -12,10 +12,14 @@ import AccordionSummary from '@material-ui/core/AccordionSummary';
 import Typography from '@material-ui/core/Typography';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { getIssuesType } from '../types';
+import Grid from "@material-ui/core/Grid";
 
 const useStyles = makeStyles((theme) => ({
 	root: {
 	  width: '100%',
+	},
+	grid: {
+		flexGrow: 1,
 	},
 	heading: {
 	  fontSize: theme.typography.pxToRem(15),
@@ -31,8 +35,9 @@ const useStyles = makeStyles((theme) => ({
 		overflowY: 'scroll'
 	},
 	priority: {
-		width: '1.5rem'
-	}
+		width: '1.5rem',
+		transform: 'none !important'
+	},
 }));
 
 /* eslint-enable */
@@ -68,9 +73,30 @@ const Issues = ({getIssues, issues}) => {
 							<Typography className={classes.secondaryHeading}>{entry.fields.summary}</Typography>
 						</AccordionSummary>
 						<AccordionDetails>
-							<Typography>
-								{entry.fields.description}
-							</Typography>
+							<div className={classes.grid}>
+								<a href={"https://jira.hyperledger.org/browse/" + entry.key} target='_blank'>Link: {entry.key}</a>
+							<Grid container spacing={3}>
+								<Grid item xs>
+									<Typography variant="caption">
+										<p>Created: {new Date(entry.fields.created).toLocaleString()} by {entry.fields.reporter.displayName}</p>
+									</Typography>
+								</Grid>
+								<Grid item xs={1}>
+								</Grid>
+								<Grid item xs>
+									<Typography variant="caption" align="right">
+										<p>Updated: {new Date(entry.fields.updated).toLocaleString()}</p>
+									</Typography>
+								</Grid>
+							</Grid>
+								<Grid container spacing={3}>
+								<Grid item>
+															<Typography variant="body2">
+																{entry.fields.description}
+															</Typography>
+								</Grid>
+							</Grid>
+							</div>
 						</AccordionDetails>
 					</Accordion>
 				))
