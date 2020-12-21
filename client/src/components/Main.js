@@ -41,6 +41,7 @@ const {
 	peerStatusSelector,
 	transactionByOrgSelector,
 	metricSelector,
+	peerMetricsSelector
 } = chartSelectors;
 
 const {
@@ -90,7 +91,9 @@ export const Main = props => {
 		getLogs,
 		logs,
 		getIssues,
-		issues
+		issues,
+		getPeerMetrics,
+		peerMetrics
 	} = props;
 
 	const blocksViewProps = {
@@ -123,7 +126,9 @@ export const Main = props => {
 	const networkViewProps = {
 		peerList,
 		getLogs,
-		logs
+		logs,
+		getPeerMetrics,
+		peerMetrics
 	};
 
 	const transactionsViewProps = {
@@ -234,7 +239,8 @@ export default compose(
 			blockActivity: blockActivitySelector(state),
 			metrics: metricSelector(state),
 			logs: logsSelector(state),
-			issues: issuesSelector(state)
+			issues: issuesSelector(state),
+			peerMetrics: peerMetricsSelector(state)
 		}),
 		{
 			getTransaction: tableOperations.transaction,
@@ -242,7 +248,8 @@ export default compose(
 			getTransactionListSearch: tableOperations.transactionListSearch,
 			getMetrics: chartOperations.metrics,
 			getLogs: tableOperations.logs,
-			getIssues: tableOperations.issues
+			getIssues: tableOperations.issues,
+			getPeerMetrics: chartOperations.peerMetrics
 		}
 	)
 )(Main);

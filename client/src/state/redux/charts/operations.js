@@ -251,6 +251,27 @@ const metrics = (start, end) => async (dispatch) => {
 		})
 	};
 
+const peerMetrics = (current, reference) => async(dispatch ) => {
+	const query = `current=${current}&end=${reference}`;
+	return get(`/api/charts/peers?${query}`)
+		.then(resp => {
+			if (resp.status === 500) {
+				dispatch(
+					actions.getErroMessage(
+						'500 Internal Server Error: The server has encountered an internal error and unable to complete your request'
+					)
+				);
+			} else if (resp.status === 400) {
+				dispatch(actions.getErroMessage(resp.error));
+			} else {
+				dispatch(actions.getMetrics(resp));
+			}
+		})
+		.catch(error => {
+			console.error(error);
+		})
+}
+
 export default {
 	blockPerHour,
 	blockPerMin,
@@ -264,5 +285,6 @@ export default {
 	changeChannel,
 	peerStatus,
 	blockActivity,
-	metrics
+	metrics,
+	peerMetrics
 };

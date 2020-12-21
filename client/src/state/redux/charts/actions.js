@@ -71,6 +71,11 @@ const getMetrics = metrics => ({
 		payload: metrics,
 })
 
+const getPeerMetrics = metrics => ({
+	type: types.PEER_METRICS,
+	payload: metrics,
+})
+
 export default {
   getBlockPerHour,
   getBlockPerMin,
@@ -85,5 +90,6 @@ export default {
   updateChannel,
   getErroMessage,
   getBlockActivity,
-	getMetrics
+	getMetrics,
+	getPeerMetrics
 };

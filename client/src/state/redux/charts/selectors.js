@@ -15,3 +15,4 @@ export const transactionPerMinSelector = state => state.charts.transactionPerMin
 export const errorMessageSelector = state => state.charts.errorMessage.error;
 export const blockActivitySelector = state => state.charts.blockActivity.rows;
 export const metricSelector = state => state.charts.metrics.rows;
+export const peerMetricsSelector = state => state.charts.peerMetrics.rows;

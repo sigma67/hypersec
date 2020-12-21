@@ -31,6 +31,8 @@ const BLOCK_ACTIVITY = `${namespaces}/BLOCK_ACTIVITY`;
 
 const METRICS = `${namespaces}/METRICS`;
 
+const PEER_METRICS = `${namespaces}/PEER_METRICS`
+
 export default {
   BLOCK_CHART_HOUR,
   BLOCK_CHART_MIN,
@@ -45,5 +47,6 @@ export default {
   TRANSACTION_CHART_ORG,
   ERROR_MESSAGE,
   BLOCK_ACTIVITY,
-	METRICS
+	METRICS,
+	PEER_METRICS
 };

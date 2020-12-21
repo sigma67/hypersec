@@ -189,6 +189,21 @@ const metricsReducer = ( state = initialState, action ) => {
 	}
 };
 
+const peerMetricsReducer = ( state = initialState, action ) => {
+	switch (action.type) {
+		case types.METRICS: {
+			return {
+				rows: action.payload,
+				loaded: true,
+				errors: action.errors,
+			};
+		}
+		default: {
+			return state;
+		}
+	}
+};
+
 const reducer = combineReducers({
   blockPerHour: blockPerHourReducer,
   blockPerMin: blockPerMinReducer,
@@ -203,6 +218,7 @@ const reducer = combineReducers({
   errorMessage: errorMessageReducer,
 	blockActivity: blockActivityReducer,
 	metrics: metricsReducer,
+	peerMetrics: peerMetricsReducer
 });
 
 export default reducer;
