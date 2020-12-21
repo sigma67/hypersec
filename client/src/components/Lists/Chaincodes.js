@@ -9,6 +9,7 @@ import Dialog from '@material-ui/core/Dialog';
 import ReactTable from '../Styled/Table';
 import ChaincodeForm from '../Forms/ChaincodeForm';
 import ChaincodeModal from '../View/ChaincodeModal';
+import ChaincodeScanModal from '../View/ChaincodeScanModal';
 import { chaincodeListType } from '../types';
 
 const styles = theme => ({
@@ -27,7 +28,8 @@ export class Chaincodes extends Component {
 		this.state = {
 			dialogOpen: false,
 			sourceDialog: false,
-			chaincode: {}
+			chaincode: {},
+			sortOptions: [{ id: 'txCount', desc: true }]
 		};
 	}
 
@@ -48,19 +50,16 @@ export class Chaincodes extends Component {
 		this.setState({ sourceDialog: false });
 	};
 
+	handleScanDialogOpen = (scan) => {
+		this.setState({ scan });
+		this.setState({scanDialog: true})
+	};
+
+	handleScanDialogClose = () => {
+		this.setState({scanDialog: false})
+	};
+
 	reactTableSetup = classes => [
-		{
-			Header: 'Chaincode Name',
-			accessor: 'chaincodename',
-			filterMethod: (filter, rows) =>
-				matchSorter(
-					rows,
-					filter.value,
-					{ keys: ['chaincodename'] },
-					{ threshold: matchSorter.rankings.SIMPLEMATCH }
-				),
-			filterAll: true
-		},
 		{
 			Header: 'Channel Name',
 			accessor: 'channelName',
@@ -74,13 +73,25 @@ export class Chaincodes extends Component {
 			filterAll: true
 		},
 		{
-			Header: 'Path',
-			accessor: 'path',
+			Header: 'Chaincode Name',
+			accessor: 'chaincodename',
 			filterMethod: (filter, rows) =>
 				matchSorter(
 					rows,
 					filter.value,
-					{ keys: ['path'] },
+					{ keys: ['chaincodename'] },
+					{ threshold: matchSorter.rankings.SIMPLEMATCH }
+				),
+			filterAll: true
+		},
+		{
+			Header: 'Version',
+			accessor: 'version',
+			filterMethod: (filter, rows) =>
+				matchSorter(
+					rows,
+					filter.value,
+					{ keys: ['version'] },
 					{ threshold: matchSorter.rankings.SIMPLEMATCH }
 				),
 			filterAll: true
@@ -98,22 +109,34 @@ export class Chaincodes extends Component {
 			filterAll: true
 		},
 		{
-			Header: 'Version',
-			accessor: 'version',
+			Header: 'Security Scan Result',
+			accessor: 'scan',
+			Cell: row => (
+				<span>
+					<a
+						onClick={() => this.handleScanDialogOpen(row.value)}
+						href="#/chaincodes"
+					>
+						<div>
+							{ row.value? "Scan available" : row.value}
+						</div>
+					</a>
+				</span>
+			),
 			filterMethod: (filter, rows) =>
 				matchSorter(
 					rows,
 					filter.value,
-					{ keys: ['version'] },
+					{ keys: ['scan'] },
 					{ threshold: matchSorter.rankings.SIMPLEMATCH }
 				),
 			filterAll: true
-		}
+		},
 	];
 
 	render() {
 		const { chaincodeList, classes } = this.props;
-		const { dialogOpen, sourceDialog, chaincode } = this.state;
+		const { dialogOpen, sourceDialog, chaincode, scanDialog, scan } = this.state;
 		return (
 			<div>
 				{/* <Button className="button" onClick={() => this.handleDialogOpen()}>
@@ -122,10 +145,13 @@ export class Chaincodes extends Component {
 				<ReactTable
 					data={chaincodeList}
 					columns={this.reactTableSetup(classes)}
-					defaultPageSize={5}
+					defaultPageSize={10}
 					filterable
 					minRows={0}
-					showPagination={!(chaincodeList.length < 5)}
+					showPagination={!(chaincodeList.length < 10)}
+					sorted={this.state.sortOptions}
+					onSortedChange={val => {
+						this.setState({ sortOptions: val }) }}
 				/>
 				<Dialog
 					open={dialogOpen}
@@ -145,6 +171,18 @@ export class Chaincodes extends Component {
 						chaincode={chaincode}
 						classes={classes}
 						onClose={this.sourceDialogClose}
+					/>
+				</Dialog>
+				<Dialog
+					open={scanDialog}
+					onClose={this.handleScanDialogClose}
+					fullWidth
+					maxWidth="md"
+				>
+					<ChaincodeScanModal
+						scan={scan}
+						classes={classes}
+						onClose={this.handleScanDialogClose}
 					/>
 				</Dialog>
 			</div>
