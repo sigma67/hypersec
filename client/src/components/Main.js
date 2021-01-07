@@ -143,8 +143,6 @@ export const Main = props => {
 		metrics,
 	};
 
-	const securityViewProps = {};
-
 	return (
 		<Router>
 			<div className={classes.main}>
@@ -189,13 +187,6 @@ export const Main = props => {
 						path="/transactions"
 						render={routeprops => (
 							<TransactionsView {...{ ...transactionsViewProps, ...routeprops }} />
-						)}
-					/>
-					<Private
-						exact
-						path="/security"
-						render={routeprops => (
-							<SecurityView {...{ ...securityViewProps, ...routeprops }} />
 						)}
 					/>
 					<Route exact render={routeprops => <PageNotFound {...routeprops} />} />
