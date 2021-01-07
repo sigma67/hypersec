@@ -252,7 +252,7 @@ const metrics = (start, end) => async (dispatch) => {
 	};
 
 const peerMetrics = (current, reference) => async(dispatch ) => {
-	const query = `current=${current}&end=${reference}`;
+	const query = `current=${current}&reference=${reference}`;
 	return get(`/api/charts/peers?${query}`)
 		.then(resp => {
 			if (resp.status === 500) {
@@ -264,13 +264,13 @@ const peerMetrics = (current, reference) => async(dispatch ) => {
 			} else if (resp.status === 400) {
 				dispatch(actions.getErroMessage(resp.error));
 			} else {
-				dispatch(actions.getMetrics(resp));
+				dispatch(actions.getPeerMetrics(resp));
 			}
 		})
 		.catch(error => {
 			console.error(error);
 		})
-}
+};
 
 export default {
 	blockPerHour,

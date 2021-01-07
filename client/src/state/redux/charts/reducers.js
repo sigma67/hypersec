@@ -191,7 +191,7 @@ const metricsReducer = ( state = initialState, action ) => {
 
 const peerMetricsReducer = ( state = initialState, action ) => {
 	switch (action.type) {
-		case types.METRICS: {
+		case types.PEER_METRICS: {
 			return {
 				rows: action.payload,
 				loaded: true,
