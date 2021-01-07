@@ -3,20 +3,18 @@ import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
-import { scaleTime, scaleLinear } from '@visx/scale';
+import { scaleTime, scaleLinear, scaleOrdinal } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
 import { AreaStack, Line } from '@visx/shape';
 import { curveLinear } from '@visx/curve';
 import { Group } from '@visx/group';
 import { GridRows, GridColumns } from '@visx/grid';
-import { scaleOrdinal } from '@visx/scale';
+
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
-import {
-	withTooltip,
+import {withTooltip,
 	Tooltip,
 	TooltipWithBounds,
-	defaultStyles
-} from '@visx/tooltip';
+	defaultStyles} from '@visx/tooltip';
 import { localPoint } from '@visx/event';
 import { schemePastel1 } from 'd3-scale-chromatic';
 import { max, bisector } from 'd3-array';
@@ -74,20 +72,18 @@ export default withTooltip(
 		}, []);
 
 		const xScale = useMemo(
-			() =>
-				scaleTime({
-					range: [0, xMax],
-					domain: [from, to]
-				}),
+			() => scaleTime({
+				range: [0, xMax],
+				domain: [from, to]
+			}),
 			[xMax, from, to]
 		);
 
 		const yScale = useMemo(
-			() =>
-				scaleLinear({
-					range: [yMax, 0],
-					domain: [0, yMaxValue]
-				}),
+			() => scaleLinear({
+				range: [yMax, 0],
+				domain: [0, yMaxValue]
+			}),
 			[yMax, yMaxValue]
 		);
 
@@ -127,8 +123,8 @@ export default withTooltip(
 						}
 						tooltipCircles.push({
 							key: key,
-							value: (d['data'][key] * 1000).toFixed(2),
-							time: d['data'].time * 1000,
+							value: (d.data[key] * 1000).toFixed(2),
+							time: d.data.time * 1000,
 							yValue: yScale(d[1])
 						});
 					}
@@ -142,15 +138,19 @@ export default withTooltip(
 		);
 
 		useEffect(() => {
+			data.forEach((d) => {
+				d.endorser_proposal = isNaN(d.endorser_proposal) ? 0 : d.endorser_proposal;
+				d.broadcast_enqueue = isNaN(d.broadcast_enqueue) ? 0 : d.broadcast_enqueue;
+				d.broadcast_validate = isNaN(d.broadcast_validate) ? 0 : d.broadcast_validate;
+			});
 			setYMaxValue(
 				data
 					? max(
-							data,
-							d =>
-								parseFloat(d.endorser_proposal) +
+						data,
+						d => parseFloat(d.endorser_proposal) +
 								parseFloat(d.broadcast_enqueue) +
 								parseFloat(d.broadcast_validate)
-					  )
+					)
 					: 0
 			);
 		}, [data]);
@@ -210,7 +210,7 @@ export default withTooltip(
 										<Line
 											from={{ x: tooltipLeft, y: 0 }}
 											to={{ x: tooltipLeft, y: yMax }}
-											stroke={'#919191'}
+											stroke="#919191"
 											strokeWidth={1}
 											pointerEvents="none"
 											strokeDasharray="5,2"
