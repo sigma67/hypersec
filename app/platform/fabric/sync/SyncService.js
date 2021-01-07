@@ -591,6 +591,11 @@ class SyncServices {
 						txObj.payload.data.actions[0].payload.action.endorsements[0].endorser
 							.IdBytes;
 				}
+				
+				if(txObj.payload.header.channel_header.typeString == "CONFIG"){
+					readSet = txObj.payload.data.last_update.payload.data.config_update.read_set;
+					writeSet = txObj.payload.data.last_update.payload.data.config_update.write_set;
+				}
 
 				const read_set = JSON.stringify(readSet, null, 2);
 				const write_set = JSON.stringify(writeSet, null, 2);
