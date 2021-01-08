@@ -2,21 +2,13 @@
  *    SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useMemo, useRef } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import React, {useEffect, useRef, useState} from 'react';
+import {makeStyles} from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Card from '@material-ui/core/Card';
-import { LegendOrdinal } from '@visx/legend';
-import { scaleOrdinal, scaleLinear } from '@visx/scale';
-import { InputLabel,
-	MenuItem,
-	FormControl,
-	Select} from '@material-ui/core';
-import { withTooltip,
-	Tooltip,
-	defaultStyles as defaultTooltipStyles } from '@visx/tooltip';
+import {scaleLinear, scaleOrdinal} from '@visx/scale';
+import {defaultStyles as defaultTooltipStyles, Tooltip, withTooltip} from '@visx/tooltip';
 import * as d3 from 'd3';
-import useResizeObserver from './useResizeObserver';
 import Peers from '../Lists/Peers';
 
 const useStyles = makeStyles((theme) => ({
@@ -47,9 +39,16 @@ const peerTypeColorScale = scaleOrdinal({
 	domain: ['PEER', 'ORDERER']
 });
 
+const hotLinkColorScale = scaleLinear({
+	domain: [0, 10],
+	range: ['#5173a5', '#bc584f'],
+});
+
 export default withTooltip(
 	({
 		peerList,
+		getPeerMetrics,
+		peerMetrics,
 		getLogs,
 		logs,
 		tooltipOpen,
@@ -59,41 +58,77 @@ export default withTooltip(
 		showTooltip,
 		hideTooltip
 	}) => {
-		const classes = useStyles();
 
-		const hotLinkColorScale = scaleLinear({
-			domain: [0, 1],
-			range: ['#5173a5', '#bc584f'],
-		});
+		const classes = useStyles();
 
 		const wrapperRef = useRef();
 
-		const nodeData = useMemo(() => {
-			return [
+		const [linkData, setLinkData] = useState();
+		const [nodeData, setNodeData] = useState();
+		const [metricsClean, setMetricsClean] = useState();
+
+		const getPeerMetricsAsync = async () => {
+			await getPeerMetrics();
+		};
+
+		useEffect(() => {
+			getPeerMetricsAsync();
+		}, []);
+
+		useEffect(() => {
+			peerList.filter((peer) => peer.peer_type === 'ORDERER')[0].connected = true; // workaround for test network
+			setNodeData([
 				{mspid: 'PeerParent', server_hostname: 'PeerParent', peer_type: 'PeerParent', connected: true},
 				{mspid: 'OrdererParent', server_hostname: 'OrdererParent', peer_type: 'OrdererParent', connected: true},
 				...peerList
-			];
-		}, [peerList]);
+			]);
+		}, [peerList, setNodeData]);
 
-		const linkData = useMemo(() => {
+		useEffect(() => {
+			if (!peerMetrics) return;
+			const cleanMetrics = [];
+			peerMetrics.forEach( (metric) => {
+				metric.source = metric.source.split(':')[0];
+				metric.deviation = ((metric.deviation - 1)).toFixed(4);
+				cleanMetrics.push(metric);
+			});
+			setMetricsClean(cleanMetrics);
+		}, [peerMetrics, setMetricsClean]);
+
+		useEffect(() => {
+			if (!nodeData || !metricsClean) return;
 			const links = [];
 			nodeData.forEach(node => {
 				if (!node.connected) {
 					links.push({source: node.peer_type === 'PEER' ? nodeData[0] : nodeData[1], target: node});
 				} else {
 					if (node.peer_type === 'PeerParent' || node.peer_type === 'OrdererParent') return;
-					if (node.peer_type === 'PEER') links.push({source: node, target: nodeData[0]}, {source: node, target: nodeData[1]});
-					if (node.peer_type === 'ORDERER') links.push({source: node, target: nodeData[1]}, {source: node, target: nodeData[0]});
+					if (node.peer_type === 'ORDERER') links.push({source: node, target: nodeData[1]});
 				}
 			});
-			return links;
-		}, [nodeData]);
+			metricsClean.forEach(metric => {
+				const newLink = {};
+				newLink.source = peerList.filter((peer) => peer.server_hostname === metric.source)[0];
+				if (metric.target === 'orderer') {
+					newLink.target = peerList.filter((peer) => peer.peer_type === 'ORDERER' && peer.connected)[0];
+				} else {
+					if (newLink.source.peer_type === 'PEER') {
+						newLink.target = nodeData.filter((peer) => peer.server_hostname === 'PeerParent')[0];
+					} else {
+						newLink.target = peerList.filter((peer) => peer.peer_type === 'PEER' && peer.connected)[0];
+					}
+				}
+				newLink.current = metric.current;
+				newLink.deviation = metric.deviation;
+				newLink.reference = metric.reference;
+				links.push(newLink);
+			});
+			setLinkData(links);
+		}, [metricsClean, nodeData, setLinkData, peerList]);
 
 		/*
 		 *const svg = d3.select(svgRef.current);
 		 *
-		 // links
 		 *const links = svg.selectAll('.link')
 		 *.data(linkData)
 		 *.join('line')
@@ -155,7 +190,6 @@ export default withTooltip(
 		 *hideTooltip();
 		 *});
 		 *
-		 // nodes
 		 *const nodes = svg.selectAll('.node')
 		 *.data(nodeData)
 		 *.join('circle')
@@ -213,7 +247,6 @@ export default withTooltip(
 		 *hideTooltip();
 		 *});
 		 *
-		 // labels for nodes
 		 *const nodeLabels = svg.selectAll('.nodeLabel')
 		 *.data(nodeData)
 		 *.join('text')
@@ -222,7 +255,6 @@ export default withTooltip(
 		 *.attr('font-size', 12)
 		 *.text(node => node.server_hostname);
 		 *
-		 // labels for links
 		 *const linkLabels = svg.selectAll('.linkLabel')
 		 *.data(linkData)
 		 *.join('text')
@@ -233,32 +265,28 @@ export default withTooltip(
 		 *.attr('font-size', 12)
 		 *.text(link => link.hot);
 		 *
-		 // d3 force directed simulation
 		 *const simulation = d3.forceSimulation(nodeData)
 		 *.force('link', d3.forceLink().id((d) => d.hot))
 		 *.force('charge', d3.forceManyBody().strength(-100).distanceMax(200))
 		 *.force('collide', d3.forceCollide(30))
 		 *.on('tick', () => {
 		 *console.log(simulation.alpha());
-		 // links
+
 		 *links
 		 *	.attr('x1', link => link.source.x)
 		 *	.attr('y1', link => link.source.y)
 		 *	.attr('x2', link => link.target.x)
 		 *	.attr('y2', link => link.target.y);
 		 *
-		 // nodes
-		 nodes
+
+		 *nodes
 		 *	.attr('cx', node => node.x)
 		 *	.attr('cy', node => node.y);
 		 *
-		 // labels for nodes
 		 *nodeLabels
 		 *	.attr('x', node => node.x)
 		 *	.attr('y', node => node.y + 25);
 		 *
-		 // labels for links
-		 *linkLabels
 		 *	.attr('transform', (d) => {
 		 *		const angle = Math.atan((d.source.y - d.target.y) / (d.source.x - d.target.x)) * 180 / Math.PI;
 		 *		return 'translate(' + [(d.source.x + d.target.x) / 2, (d.source.y + d.target.y) / 2] + ')rotate(' + angle + ')';
@@ -268,6 +296,7 @@ export default withTooltip(
 		 */
 
 		useEffect(() => {
+			if (!nodeData || !linkData) return;
 			let destroyFn;
 
 			if (wrapperRef.current) {
@@ -291,28 +320,39 @@ export default withTooltip(
 									style={{ ...defaultTooltipStyles, backgroundColor: '#283238', color: 'white' }}
 								>
 									<div>
-										<strong>{tooltipData.hoveredNode.server_hostname}</strong>
+										<strong>{tooltipData.data.server_hostname}</strong>
 									</div>
 									<div style={{ marginTop: '5px', fontSize: '12px' }}>
-								MSP: <strong>{tooltipData.hoveredNode.mspid}</strong>
+										MSP: <strong>{tooltipData.data.mspid}</strong>
 										<br />
-								Status: <strong style={{color: `${tooltipData.hoveredNode.status === 'DOWN' ? 'red' : 'green'}`}}>{tooltipData.hoveredNode.status}</strong>
+										Status: <strong style={{color: `${tooltipData.data.status === 'DOWN' ? 'red' : 'green'}`}}>{tooltipData.data.status}</strong>
 										<br />
-								Type: <strong style={{color: `${peerTypeColorScale(tooltipData.hoveredNode.peer_type)}`}}>{tooltipData.hoveredNode.peer_type}</strong>
+										Type: <strong style={{color: `${peerTypeColorScale(tooltipData.data.peer_type)}`}}>{tooltipData.data.peer_type}</strong>
 									</div>
 								</Tooltip>
 							)}
 							{tooltipOpen && tooltipData && tooltipData.type === 'link' && (
-								<Tooltip
-									top={tooltipTop}
-									left={tooltipLeft}
-									style={{ ...defaultTooltipStyles, backgroundColor: '#283238', color: 'white' }}
-								>
+								<Tooltip top={tooltipTop} left={tooltipLeft} style={{ ...defaultTooltipStyles, backgroundColor: '#283238', color: 'white' }}>
 									<div>
-										<strong>{`${tooltipData.hoveredLink.source.server_hostname} -> ${tooltipData.hoveredLink.target.server_hostname}`}</strong>
+										<strong>Link</strong>
 									</div>
 									<div style={{ marginTop: '5px', fontSize: '12px' }}>
-								Hot: {tooltipData.hoveredLink.hot} (<strong style={{color: 'red'}}>+ 10%</strong>)
+										Source: <strong>{tooltipData.data.source.server_hostname}</strong>
+										<br />
+										Target: <strong>{tooltipData.data.target.server_hostname}</strong>
+										<br />
+										{tooltipData.data.current && (
+											<div>
+												Messages/h: {tooltipData.data.current.toFixed(4)} (<strong style={{color: hotLinkColorScale(tooltipData.data.deviation)}}>
+													{`${tooltipData.data.deviation > 0 ? '+' : ''}${tooltipData.data.deviation * 100}%`}
+												</strong>)
+											</div>
+										)}
+										{!tooltipData.data.current && (
+											<div>
+												Messages/h: <strong>no data available</strong>
+											</div>
+										)}
 									</div>
 								</Tooltip>
 							)}
@@ -323,18 +363,34 @@ export default withTooltip(
 					</Grid>
 				</Grid>
 			</div>
-
 		);
 	}
 );
 
-function runForceGraph(
+async function runForceGraph(
 	container,
 	linksData,
 	nodesData,
 	showTooltip,
 	hideTooltip
 ) {
+
+	let unidirectionalLinksData = [];
+	const bidirectionalLinksData = [];
+	const tempLinks = [...linksData];
+	linksData.forEach(link => {
+		const oppositeLink = linksData.find(d => d.source.server_hostname === link.target.server_hostname && d.target.server_hostname === link.source.server_hostname);
+		if (oppositeLink) {
+			const linkIndex = linksData.indexOf(link);
+			const oppositeLinkIndex = linksData.indexOf(oppositeLink);
+			if (bidirectionalLinksData.indexOf(link) < 0) { bidirectionalLinksData.push(link); }
+			if (bidirectionalLinksData.indexOf(oppositeLink) < 0) { bidirectionalLinksData.push(oppositeLink); }
+			tempLinks.splice(linkIndex, 1);
+			tempLinks.splice(oppositeLinkIndex, 1);
+		}
+	});
+	unidirectionalLinksData = tempLinks;
+
 	const peersData = [nodesData[0], ...nodesData.filter(d => d.peer_type === 'PEER')];
 	const orderersData = [nodesData[1], ...nodesData.filter(d => d.peer_type === 'ORDERER')];
 
@@ -367,17 +423,54 @@ function runForceGraph(
 
 		d3.selectAll('.linkPath')
 			.transition().duration(300)
-			.attr('opacity', (link) => (link.source.server_hostname === d.target.id || link.target.server_hostname === d.target.id ? 1 : specification.hoverFactor));
+			.attr('opacity', specification.hoverFactor);
+			//.attr('opacity', (link) => (link.source.server_hostname === d.target.id || link.target.server_hostname === d.target.id ? 1 : specification.hoverFactor));
 
+		toolTip('node', nodesData.filter(node => node.server_hostname === d.target.id)[0], d.x, d.y);
+	};
+
+	const mouseOverLink = (d) => {
+		const nodes = d.target.id.split(',');
+		const hoveredLink = linksData.find(link => link.source.server_hostname === nodes[0] && link.target.server_hostname === nodes[1]);
+
+		d3.selectAll('.peerNode')
+			.transition().duration(300)
+			.attr('opacity', (node) =>
+				node.server_hostname === hoveredLink.source.server_hostname || node.server_hostname === hoveredLink.target.server_hostname
+				? 1
+				: specification.hoverFactor);
+
+		d3.selectAll('.ordererNode')
+			.transition().duration(300)
+			.attr('opacity', (node) =>
+				node.server_hostname === hoveredLink.source.server_hostname || node.server_hostname === hoveredLink.target.server_hostname
+					? 1
+					: specification.hoverFactor);
+
+		d3.selectAll('.nodeLabel')
+			.transition().duration(300)
+			.attr('opacity', (node) => node.server_hostname === hoveredLink.source.server_hostname || node.server_hostname === hoveredLink.target.server_hostname
+				? 1
+				: 0.25);
+
+		d3.selectAll('.linkPath')
+			.transition().duration(300)
+			.attr('opacity', (link) => `${link.source.server_hostname},${link.target.server_hostname}` === d.target.id ? 1 : specification.hoverFactor)
+			.attr('stroke-width', (link) => `${link.source.server_hostname},${link.target.server_hostname}` === d.target.id ? 10 : 3);
+
+		toolTip('link', hoveredLink, d.x, d.y);
+	};
+
+	const toolTip = (type, data, x, y) => {
 		showTooltip({
 			tooltipData: {
-				'type': 'node',
-				'hoveredNode': nodesData.filter(node => node.server_hostname === d.target.id)[0]
+				'type': type,
+				'data': data
 			},
-			tooltipLeft: d.x,
-			tooltipTop: d.y
-		});
-	};
+			tooltipLeft: x,
+			tooltipTop: y
+		})
+	}
 
 	const mouseLeave = () => {
 		d3.selectAll('.peerNode')
@@ -397,6 +490,7 @@ function runForceGraph(
 
 		d3.selectAll('.linkPath')
 			.transition().duration(150)
+			.attr('stroke-width', (d) => d.current ? 5 : 3)
 			.attr('opacity', 1);
 
 		hideTooltip();
@@ -404,11 +498,26 @@ function runForceGraph(
 
 	const simulation = d3
 		.forceSimulation(nodesData)
-		.force('link', d3.forceLink(linksData).id(d => d.hot))
-		.force('charge', d3.forceManyBody().strength(-100))
+		.force('link', d3.forceLink([unidirectionalLinksData, bidirectionalLinksData])
+			.id(d => d.id)
+			.distance(150))
+		.force('charge', d3.forceManyBody().strength(-300))
 		.force('collide', d3.forceCollide(50))
 		.force('x', d3.forceX())
 		.force('y', d3.forceY());
+
+	const dragStarted = () => {
+		simulation.restart();
+		simulation.alpha(.5);
+	};
+
+	const dragging = (event, d) => {
+		d3.select(this).attr("cx", d.x = event.x).attr("cy", d.y = event.y);
+	};
+
+	const dragEnded = () => {
+
+	};
 
 	const svg = d3
 		.select(container)
@@ -419,12 +528,29 @@ function runForceGraph(
 		.append('g')
 		.attr('class', 'links')
 		.selectAll('.linkPath')
-		.data(linksData)
-		.join('path')
+		.data(unidirectionalLinksData)
+		.join('line')
+		.attr('id', d => `${d.source.server_hostname},${d.target.server_hostname}`)
 		.attr('class', 'linkPath')
-		.attr('stroke', '#999')
+		.attr('stroke', (d) => d.deviation ? hotLinkColorScale(d.deviation) : '#999')
 		.attr('fill', 'none')
-		.attr('stroke-width', 1.5);
+		.attr('stroke-width', (d) => d.current ? 5 : 3)
+		.on('mouseover', (d) => mouseOverLink(d))
+		.on('mouseleave', mouseLeave);
+
+	const bidirectionalLink = svg
+		.append('g')
+		.attr('class', 'links')
+		.selectAll('.linkPath')
+		.data(bidirectionalLinksData)
+		.join('path')
+		.attr('id', d => `${d.source.server_hostname},${d.target.server_hostname}`)
+		.attr('class', 'linkPath')
+		.attr('stroke', (d) => d.deviation ? hotLinkColorScale(d.deviation) : '#999')
+		.attr('fill', 'none')
+		.attr('stroke-width', (d) => d.current ? 5 : 3)
+		.on('mouseover', (d) => mouseOverLink(d))
+		.on('mouseleave', mouseLeave);
 
 	const ordererNode = svg
 		.append('g')
@@ -438,12 +564,17 @@ function runForceGraph(
 		.attr('stroke-width', specification.nodeStrokeWidth)
 		.attr('fill', (d) => {
 			if (d.server_hostname === 'OrdererParent') return '#fff';
-			return d.connected ? peerTypeColorScale(d.peer_type) : '#999';
+			return d.connected ? peerTypeColorScale(d.peer_type) : peerTypeColorScale(d.peer_type);
 		})
 		.attr('width', specification.nodeRadius * 2)
 		.attr('height', specification.nodeRadius * 2)
 		.on('mouseover', (d) => mouseOverNode(d))
-		.on('mouseleave', mouseLeave);
+		.on('mouseleave', mouseLeave)
+		.call(d3.drag()
+			.on("start", dragStarted)
+			.on("drag", dragging)
+			.on("end", dragEnded)
+		);
 
 	const peerNode = svg
 		.append('g')
@@ -461,7 +592,12 @@ function runForceGraph(
 			return d.connected ? peerTypeColorScale(d.peer_type) : '#999';
 		})
 		.on('mouseover', (d) => mouseOverNode(d))
-		.on('mouseleave', mouseLeave);
+		.on('mouseleave', mouseLeave)
+		.call(d3.drag()
+			.on("start", dragStarted)
+			.on("drag", dragging)
+			.on("end", dragEnded)
+		);
 
 	const nodeLabels = svg
 		.append('g')
@@ -472,10 +608,19 @@ function runForceGraph(
 		.attr('class', 'nodeLabel')
 		.attr('text-anchor', 'middle')
 		.attr('font-size', 12)
-		.text(node => (node.server_hostname === 'OrdererParent' || node.server_hostname === 'PeerParent' ? '' : node.server_hostname));
+		.text(node => {
+			if (node.server_hostname === 'OrdererParent' || node.server_hostname === 'PeerParent') return '';
+			return node.connected ? node.server_hostname : node.mspid;
+		});
 
 	simulation.on('tick', () => {
 		link
+			.attr('x1', d => d.source.x)
+			.attr('y1', d => d.source.y)
+			.attr('x2', d => d.target.x)
+			.attr('y2', d => d.target.y);
+
+		bidirectionalLink
 			.attr('d', d => {
 				const r = Math.hypot(d.target.x - d.source.x, d.target.y - d.source.y);
 				return `

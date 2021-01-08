@@ -252,8 +252,7 @@ const metrics = (start, end) => async (dispatch) => {
 	};
 
 const peerMetrics = (current, reference) => async(dispatch ) => {
-	const query = `current=${current}&reference=${reference}`;
-	return get(`/api/charts/peers?${query}`)
+	 	get(`/api/charts/peers?current=${current ? current : '1h'}&reference=${reference ? reference : '7d'}`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
