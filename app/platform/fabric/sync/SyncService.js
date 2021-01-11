@@ -5,6 +5,7 @@
 const convertHex = require('convert-hex');
 const fabprotos = require('fabric-protos');
 const includes = require('lodash/includes');
+const sha = require('js-sha256');
 const helper = require('../../../common/helper');
 
 const logger = helper.getLogger('SyncServices');
@@ -502,8 +503,9 @@ class SyncServices {
 			const txLen = block.data.data.length;
 			for (let i = 0; i < txLen; i++) {
 				const txObj = block.data.data[i];
-				const size = Buffer.byteLength(JSON.stringify(txObj));
-				const txid = txObj.payload.header.channel_header.tx_id;
+				const txStr = JSON.stringify(txObj);
+				const size = Buffer.byteLength(txStr);
+				let txid = txObj.payload.header.channel_header.tx_id;
 				let validation_code = '';
 				let endorser_signature = '';
 				let payload_proposal_hash = '';
@@ -591,10 +593,11 @@ class SyncServices {
 						txObj.payload.data.actions[0].payload.action.endorsements[0].endorser
 							.IdBytes;
 				}
-				
 				if(txObj.payload.header.channel_header.typeString == "CONFIG"){
+					txid = sha.sha256(txStr)
 					readSet = txObj.payload.data.last_update.payload.data.config_update.read_set;
 					writeSet = txObj.payload.data.last_update.payload.data.config_update.write_set;
+
 				}
 
 				const read_set = JSON.stringify(readSet, null, 2);
@@ -633,7 +636,7 @@ class SyncServices {
 				/* eslint-enable */
 				const transaction_row = {
 					blockid: block.header.number.toString(),
-					txhash: txObj.payload.header.channel_header.tx_id,
+					txhash: txid,
 					createdt: txObj.payload.header.channel_header.timestamp,
 					chaincodename: chaincode,
 					chaincode_id,
