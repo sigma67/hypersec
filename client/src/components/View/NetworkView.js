@@ -40,8 +40,8 @@ const peerTypeColorScale = scaleOrdinal({
 });
 
 const hotLinkColorScale = scaleLinear({
-	domain: [0, 10],
-	range: ['#5173a5', '#bc584f'],
+	domain: [-1, 0, 1],
+	range: ['#ff1e00', '#23e200', '#ff1e00'],
 });
 
 export default withTooltip(
@@ -325,8 +325,6 @@ export default withTooltip(
 									<div style={{ marginTop: '5px', fontSize: '12px' }}>
 										MSP: <strong>{tooltipData.data.mspid}</strong>
 										<br />
-										Status: <strong style={{color: `${tooltipData.data.status === 'DOWN' ? 'red' : 'green'}`}}>{tooltipData.data.status}</strong>
-										<br />
 										Type: <strong style={{color: `${peerTypeColorScale(tooltipData.data.peer_type)}`}}>{tooltipData.data.peer_type}</strong>
 									</div>
 								</Tooltip>
@@ -334,7 +332,7 @@ export default withTooltip(
 							{tooltipOpen && tooltipData && tooltipData.type === 'link' && (
 								<Tooltip top={tooltipTop} left={tooltipLeft} style={{ ...defaultTooltipStyles, backgroundColor: '#283238', color: 'white' }}>
 									<div>
-										<strong>Link</strong>
+										<strong>{tooltipData.data.source.peer_type} -> {tooltipData.data.target.peer_type}</strong>
 									</div>
 									<div style={{ marginTop: '5px', fontSize: '12px' }}>
 										Source: <strong>{tooltipData.data.source.server_hostname}</strong>
@@ -500,15 +498,15 @@ async function runForceGraph(
 		.forceSimulation(nodesData)
 		.force('link', d3.forceLink([unidirectionalLinksData, bidirectionalLinksData])
 			.id(d => d.id)
-			.distance(150))
-		.force('charge', d3.forceManyBody().strength(-300))
+			.distance(50))
+		.force('charge', d3.forceManyBody().strength(-400))
 		.force('collide', d3.forceCollide(50))
 		.force('x', d3.forceX())
 		.force('y', d3.forceY());
 
 	const dragStarted = () => {
 		simulation.restart();
-		simulation.alpha(.5);
+		simulation.alpha(.9);
 	};
 
 	const dragging = (event, d) => {
