@@ -73,6 +73,9 @@ function TransactionBrush({
 		<React.Fragment>
 			<Grid container>
 				<Grid item xs={4}>
+					<div>
+						<text>Drag to select a time frame:</text>
+					</div>
 					<svg width={width} height={height}>
 						<Group top={margin.top} left={margin.left}>
 							<Group>
