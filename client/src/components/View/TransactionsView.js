@@ -365,8 +365,6 @@ function TransactionsView({
 											helperText={err ? `Needs to be before 'To'.` : ``}
 											style={{ width: 100 + '%' }}
 											onChange={async date => {
-												console.log(date);
-												console.log(end);
 												if (date > end) {
 													setErr(true);
 												} else {
