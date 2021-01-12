@@ -30,6 +30,13 @@ function TransactionBrush({
 	const [maxTrxCount, setMaxTrxCount] = useState(0);
 	const [total, setTotal] = useState([]);
 	useEffect(() => {
+		if (document.querySelector(".visx-brush-selection")) { //this a work-around to remove the brush-selection overlay after the displayed data changes
+			const brushSelection = document.querySelector(".visx-brush-selection");
+			brushSelection.setAttribute('x', '-1');
+			brushSelection.setAttribute('y', '-1');
+			brushSelection.setAttribute('width', '0');
+			brushSelection.setAttribute('height', '0');;
+		}
 		let maxValue = 0;
 		const tempTotal = [];
 		if (data.length < 1) return;

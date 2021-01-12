@@ -301,6 +301,7 @@ function TransactionsView({
 
 	const handleSearch = async () => {
 		setLoading(true);
+		handleBrushSelection([]);
 		await searchTransactionList();
 		await getMetrics(start / 1000, end / 1000);
 		setLoading(false);
@@ -345,6 +346,7 @@ function TransactionsView({
 	};
 
 	const handleMsPerBinChange = event => {
+		handleBrushSelection([]);
 		setMsPerBin(event.target.value);
 	};
 
