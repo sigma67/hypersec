@@ -362,12 +362,13 @@ function TransactionsView({
 											label="From"
 											value={start}
 											format="LLL"
+											helperText={err ? `Needs to be before 'To'.` : ``}
 											style={{ width: 100 + '%' }}
 											onChange={async date => {
+												console.log(date);
+												console.log(end);
 												if (date > end) {
 													setErr(true);
-													setStart(date);
-													setSelectedFrom(date);
 												} else {
 													setStart(date);
 													setSelectedFrom(date);
@@ -393,12 +394,11 @@ function TransactionsView({
 											label="To"
 											value={end}
 											format="LLL"
+											helperText={err ? `Needs to be after 'From'.` : ``}
 											style={{ width: 100 + '%' }}
 											onChange={async date => {
 												if (date < start) {
 													setErr(true);
-													setSelectedTo(date);
-													setEnd(date);
 												} else {
 													setEnd(date);
 													setSelectedTo(date);
