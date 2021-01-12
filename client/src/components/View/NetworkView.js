@@ -89,7 +89,7 @@ export default withTooltip(
 			const cleanMetrics = [];
 			peerMetrics.forEach( (metric) => {
 				metric.source = metric.source.split(':')[0];
-				metric.deviation = ((metric.deviation - 1)).toFixed(4);
+				metric.deviation = Number(Math.round((metric.deviation - 1) + "e4") + "e-4");
 				cleanMetrics.push(metric);
 			});
 			setMetricsClean(cleanMetrics);
