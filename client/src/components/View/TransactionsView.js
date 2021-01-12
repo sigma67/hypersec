@@ -433,10 +433,16 @@ function TransactionsView({
 											value={msPerBin}
 											onChange={handleMsPerBinChange}
 										>
-											<MenuItem value={60000}>1 minute</MenuItem>
-											<MenuItem value={3600000}>1 hour</MenuItem>
-											<MenuItem value={43200000}>12 hours</MenuItem>
-											<MenuItem value={86400000}>24 hours</MenuItem>
+											<MenuItem
+												disabled={end-start > 60000 * 60 * 3}
+												value={60000}>{'1m (Time range < 3h)'}
+											</MenuItem>
+											<MenuItem
+												disabled={end-start > 60000 * 60 * 24 * 7}
+												value={3600000}>{'1h (Time range < 7d)'}
+											</MenuItem>
+											<MenuItem value={43200000}>12h</MenuItem>
+											<MenuItem value={86400000}>24h</MenuItem>
 										</Select>
 									</FormControl>
 								</Col>
