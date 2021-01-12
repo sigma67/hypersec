@@ -164,10 +164,6 @@ export default withTooltip(
 									scale={xScale}
 									top={yMax}
 									tickFormat={formatBinTime}
-									tickLabelProps={() => ({
-										fontSize: 11,
-										textAnchor: 'middle'
-									})}
 									// 						numTicks={width > 1920 ? 5 : 10}
 									numTicks={5}
 								/>
@@ -189,12 +185,13 @@ export default withTooltip(
 								>
 									<div>
 										{`${moment(tooltipData.data['data']).format(
-											'MMM, Do'
-										)}, ${moment(
-											tooltipData.data['data'].timestamp
-										).hours()}:00 - ${moment(
-											tooltipData.data['data'].timestamp + msPerBin
-										).hours()}:00: `}
+												'DD.MM.'
+											)}, ${moment(
+												tooltipData.data['data'].timestamp
+											).hours()}:00 - ${moment(
+												tooltipData.data['data'].timestamp + msPerBin
+											).hours()}:00: `
+										}
 										<strong style={{ fontWeight: 800 }}>
 											{tooltipData.data[1] - tooltipData.data[0]}
 										</strong>{' '}

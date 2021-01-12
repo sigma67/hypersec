@@ -165,31 +165,27 @@ function TransactionsView({
 
 	const binTimeFormat = date => {
 		switch (msPerBin) {
-			case 60000:
+			case 60000: //1m
 				return timeFormat(
-					`${moment(date).format('MMM Do')}, ${moment(date).hours()}:${moment(
-						date
-					).minutes()}-${moment(date).hours()}:${moment(
-						date + msPerBin
-					).minutes()}`
+					`${moment(date).hours()}:${moment(date).minutes()}-${moment(date).hours()}:${moment(date + msPerBin).minutes()}`
 				);
-			case 3600000:
+			case 3600000: //1h
 				return timeFormat(
-					`${moment(date).format('MMM Do')}, ${moment(
+					`${moment(date).format('DD.MM')}, ${moment(
 						date
 					).hours()}:00-${moment(date + msPerBin).hours()}:00`
 				);
-			case 43200000:
+			case 43200000: //12h
 				return timeFormat(
-					`${moment(date).format('MMM Do')}, ${moment(
+					`${moment(date).format('DD.MM')}, ${moment(
 						date
 					).hours()}:00-${moment(date + msPerBin).hours()}:00`
 				);
-			case 86400000:
+			case 86400000: //24h
 				return timeFormat(
-					`${moment(date).format('MMM Do')}, ${moment(
+					`${moment(date).format('DD.MM')}, ${moment(
 						date
-					).hours()}:00 - ${moment(date + msPerBin).format('MMM Do')}, ${moment(
+					).hours()}:00 - ${moment(date + msPerBin).format('DD.MM')}, ${moment(
 						date
 					).hours()}:00`
 				);
