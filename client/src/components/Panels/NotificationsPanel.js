@@ -24,7 +24,12 @@ const styles = theme => {
 			backgroundColor: theme.palette.background.paper
 		},
 		avatarBlue: {
-			backgroundColor: '#1C3860'
+			backgroundColor: '#1C3860',
+			marginRight: '5px',
+		},
+		avatarRed: {
+			backgroundColor: '#cc114e',
+			marginRight: '5px',
 		},
 		panel: {
 			color: dark ? '#ffffff' : undefined,
@@ -50,6 +55,12 @@ export class NotificationsPanel extends Component {
 				return (
 					<Avatar className={classes.avatarBlue}>
 						<FontAwesome name="cube" />{' '}
+					</Avatar>
+				);
+			case 'config':
+				return (
+					<Avatar className={classes.avatarRed}>
+						<FontAwesome name="bell" />{' '}
 					</Avatar>
 				);
 			default:
