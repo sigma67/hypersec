@@ -19,8 +19,7 @@ const useStyles = makeStyles(theme => ({
 		lineHeight: '0.9em',
 		color: '#000',
 		fontSize: '11px',
-		float: 'right',
-		marginLeft: '40px',
+		marginLeft: '50px',
 		cursor: 'pointer',
 		height: '100%',
 		display: 'flex'
@@ -30,7 +29,7 @@ const useStyles = makeStyles(theme => ({
 /**
  * Global constants
  */
-const defaultMargin = { top: 10, bottom: 40, left: 50, right: 0 };
+const defaultMargin = { top: 10, bottom: 40, left: 50, right: 20 };
 
 export default withTooltip(
 	({
@@ -43,7 +42,8 @@ export default withTooltip(
 		to,
 		avgTrxSize,
 		displayedOrgs,
-		onDisplayedOrgsChange
+		onDisplayedOrgsChange,
+		customTimeAxisFormat
 	}) => {
 		const legendGlyphSize = 20;
 		const classes = useStyles();
@@ -134,6 +134,7 @@ export default withTooltip(
 									scale={xScale}
 									top={yMax}
 									numTicks={xMax > 520 ? 8 : 5}
+									tickFormat={customTimeAxisFormat}
 								/>
 								<AxisLeft scale={yScale} numTicks={4} />
 							</Group>

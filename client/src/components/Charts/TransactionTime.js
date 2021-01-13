@@ -27,8 +27,7 @@ const useStyles = makeStyles(theme => ({
 		lineHeight: '0.9em',
 		color: '#000',
 		fontSize: '11px',
-		float: 'right',
-		marginLeft: '40px',
+		marginLeft: '50px',
 		cursor: 'pointer',
 		height: '100%',
 		display: 'flex'
@@ -38,7 +37,7 @@ const useStyles = makeStyles(theme => ({
 /**
  * Global constants
  */
-const defaultMargin = { top: 10, bottom: 40, left: 50, right: 0 };
+const defaultMargin = { top: 10, bottom: 40, left: 50, right: 20 };
 const keys = ['endorser_proposal', 'broadcast_enqueue', 'broadcast_validate'];
 const legendGlyphSize = 15;
 
@@ -53,7 +52,8 @@ export default withTooltip(
 		showTooltip,
 		hideTooltip,
 		tooltipData,
-		tooltipLeft = 0
+		tooltipLeft = 0,
+		customTimeAxisFormat
 	}) => {
 		const classes = useStyles();
 
@@ -125,7 +125,7 @@ export default withTooltip(
 							key: key,
 							value: (d.data[key] * 1000).toFixed(2),
 							time: d.data.time * 1000,
-							yValue: yScale(d[1])
+							yValue: yScale(d[1] * 1000)
 						});
 					}
 				});
@@ -143,16 +143,7 @@ export default withTooltip(
 				d.broadcast_enqueue = isNaN(d.broadcast_enqueue) ? 0 : d.broadcast_enqueue;
 				d.broadcast_validate = isNaN(d.broadcast_validate) ? 0 : d.broadcast_validate;
 			});
-			setYMaxValue(
-				data
-					? max(
-						data,
-						d => parseFloat(d.endorser_proposal) +
-								parseFloat(d.broadcast_enqueue) +
-								parseFloat(d.broadcast_validate)
-					)
-					: 0
-			);
+			setYMaxValue(data	? max(data,d => parseFloat(d.endorser_proposal) +	parseFloat(d.broadcast_enqueue) +	parseFloat(d.broadcast_validate)) * 1000	: 0);
 		}, [data]);
 
 		return (
@@ -160,7 +151,7 @@ export default withTooltip(
 				<Grid container>
 					<Grid item xs={12}>
 						<Typography component="div">
-							<Box m={1}>Processing Time [s]</Box>
+							<Box m={1}>Processing Time [ms]</Box>
 						</Typography>
 					</Grid>
 					<Grid item xs={12}>
@@ -191,8 +182,8 @@ export default withTooltip(
 										keys={displayedKeys}
 										data={data}
 										x={d => xScale(d.data.time * 1000)}
-										y0={d => yScale(d[0]) || 0}
-										y1={d => yScale(d[1]) || 0}
+										y0={d => yScale(d[0] * 1000) || 0}
+										y1={d => yScale(d[1] * 1000) || 0}
 										color={d => areaColorScale(d)}
 										curve={curveLinear}
 										onMouseMove={event => handleTooltip(event)}
@@ -203,6 +194,7 @@ export default withTooltip(
 									scale={xScale}
 									top={yMax}
 									numTicks={width > 520 ? 8 : 5}
+									tickFormat={customTimeAxisFormat}
 								/>
 								<AxisLeft scale={yScale} numTicks={4} />
 								{tooltipData && (
@@ -237,22 +229,19 @@ export default withTooltip(
 									<TooltipWithBounds
 										key={`tooltip-circle-${keyCircle.key}-tooltip`}
 										top={keyCircle.yValue + 30}
-										left={
-											keyCircle === 'broadcast_enqueue'
-												? tooltipLeft - 47.5
-												: tooltipLeft + 47.5
-										}
+										left={keyCircle.key === 'broadcast_enqueue' ? tooltipLeft - 25 : tooltipLeft + 47.5}
 										style={{
 											...defaultStyles,
+
 											fontSize: '11px'
 										}}
 									>
-										{`${keyCircle.value} ms`}
+										<strong style={{color: areaColorScale(keyCircle.key)}}>{`${keyCircle.value} ms`}</strong>
 									</TooltipWithBounds>
 								))}
 
 								<Tooltip
-									top={height - 14}
+									top={height}
 									left={tooltipLeft + 40}
 									style={{
 										...defaultStyles,
@@ -263,7 +252,7 @@ export default withTooltip(
 									}}
 								>
 									<div>
-										{moment(tooltipData[0].time).format('MMM Do, kk:mm:ss:SSS')}
+										{moment(tooltipData[0].time).format('DD.MM., kk:mm:ss')}
 									</div>
 								</Tooltip>
 							</div>

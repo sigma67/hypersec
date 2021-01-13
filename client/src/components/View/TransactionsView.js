@@ -38,7 +38,8 @@ import {
 	transactionListType,
 	getMetricsType
 } from '../types';
-import { timeParse, timeFormat } from 'd3-time-format';
+import { timeFormat } from 'd3-time-format';
+import {timeDay, timeHour, timeMinute, timeMonth, timeSecond, timeWeek, timeYear} from 'd3-time';
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
@@ -163,6 +164,25 @@ function TransactionsView({
 		});
 	}, [organisations]);
 
+	const formatMillisecond = timeFormat(".%L"),
+		formatSecond = timeFormat(":%S"),
+		formatMinute = timeFormat("%H:%M"),
+		formatHour = timeFormat("%H:%M"),
+		formatDay = timeFormat("%a %d"),
+		formatWeek = timeFormat("%b %d"),
+		formatMonth = timeFormat("%B"),
+		formatYear = timeFormat("%Y");
+
+	function customTimeAxisFormat(date) {
+		return (timeSecond(date) < date ? formatMillisecond
+			: timeMinute(date) < date ? formatSecond
+				: timeHour(date) < date ? formatMinute
+					: timeDay(date) < date ? formatHour
+						: timeMonth(date) < date ? (timeWeek(date) < date ? formatDay : formatWeek)
+							: timeYear(date) < date ? formatMonth
+								: formatYear)(date);
+	}
+
 	const binTimeFormat = date => {
 		switch (msPerBin) {
 			case 60000: //1m
@@ -171,21 +191,21 @@ function TransactionsView({
 				);
 			case 3600000: //1h
 				return timeFormat(
-					`${moment(date).format('DD.MM')}, ${moment(
+					`${moment(date).format('DD.MM.')}, ${moment(
 						date
 					).hours()}:00-${moment(date + msPerBin).hours()}:00`
 				);
 			case 43200000: //12h
 				return timeFormat(
-					`${moment(date).format('DD.MM')}, ${moment(
+					`${moment(date).format('DD.MM.')}, ${moment(
 						date
 					).hours()}:00-${moment(date + msPerBin).hours()}:00`
 				);
 			case 86400000: //24h
 				return timeFormat(
-					`${moment(date).format('DD.MM')}, ${moment(
+					`${moment(date).format('DD.MM.')}, ${moment(
 						date
-					).hours()}:00 - ${moment(date + msPerBin).format('DD.MM')}, ${moment(
+					).hours()}:00 - ${moment(date + msPerBin).format('DD.MM.')}, ${moment(
 						date
 					).hours()}:00`
 				);
@@ -336,8 +356,8 @@ function TransactionsView({
 		setSelectedFrom(selectedBinTimestamps[0]);
 		setSelectedTo(
 			selectedBinTimestamps[selectedBinTimestamps.length - 1]
-				? selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin / 2
-				: selectedBinTimestamps[selectedBinTimestamps.length - 2] + msPerBin / 2
+				? selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin
+				: selectedBinTimestamps[selectedBinTimestamps.length - 2] + msPerBin
 		);
 	};
 
@@ -359,9 +379,11 @@ function TransactionsView({
 								<Col xs={5}>
 									<MuiPickersUtilsProvider utils={MomentUtils}>
 										<DateTimePicker
+											disableFuture
+											ampm={false}
 											label="From"
 											value={start}
-											format="LLL"
+											format="MMMM Do, yyyy (dddd) - HH:mm"
 											helperText={err ? `Needs to be before 'To'.` : ``}
 											style={{ width: 100 + '%' }}
 											onChange={async date => {
@@ -389,9 +411,11 @@ function TransactionsView({
 								<Col xs={5}>
 									<MuiPickersUtilsProvider utils={MomentUtils}>
 										<DateTimePicker
+											disableFuture
+											ampm={false}
 											label="To"
 											value={end}
-											format="LLL"
+											format="MMMM Do, yyyy (dddd) - HH:mm"
 											helperText={err ? `Needs to be after 'From'.` : ``}
 											style={{ width: 100 + '%' }}
 											onChange={async date => {
@@ -496,6 +520,7 @@ function TransactionsView({
 												avgTrxSize={avgTrxSize || 1}
 												displayedOrgs={displayedOrgs}
 												onDisplayedOrgsChange={handleDisplayedOrgsChanged}
+												customTimeAxisFormat={customTimeAxisFormat}
 											/>
 										)}
 									</ParentSize>
@@ -509,6 +534,7 @@ function TransactionsView({
 												data={selectedMtrx}
 												from={selectedFrom}
 												to={selectedTo}
+												customTimeAxisFormat={customTimeAxisFormat}
 											/>
 										)}
 									</ParentSize>

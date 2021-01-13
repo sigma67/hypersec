@@ -11,7 +11,7 @@ import { LinearGradient } from '@visx/gradient';
 /**
  * Global constants
  */
-const defaultMargin = { top: 5, bottom: 30, left: 0, right: 0 };
+const defaultMargin = { top: 5, bottom: 30, left: 20, right: 20 };
 const backgroundColor = '#58c5c2';
 const selectedBrushStyle = { fill: '#919191', opacity: 0.5, stroke: 'white' };
 
@@ -81,7 +81,7 @@ function TransactionBrush({
 			<Grid container>
 				<Grid item xs={4}>
 					<div>
-						<text>Drag to select a time frame:</text>
+						<div>Drag to select a time frame:</div>
 					</div>
 					<svg width={width} height={height}>
 						<Group top={margin.top} left={margin.left}>

@@ -32,8 +32,6 @@ const useStyles = makeStyles((theme) => ({
 	}
 }));
 
-const defaultMargin = { top: 5, bottom: 30, left: 0, right: 0 };
-
 const peerTypeColorScale = scaleOrdinal({
 	range: [...d3.schemeTableau10],
 	domain: ['PEER', 'ORDERER']

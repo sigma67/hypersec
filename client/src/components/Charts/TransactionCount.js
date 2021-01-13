@@ -18,15 +18,14 @@ const useStyles = makeStyles(theme => ({
 		lineHeight: '0.9em',
 		color: '#000',
 		fontSize: '11px',
-		float: 'right',
-		marginLeft: '40px',
+		marginLeft: '30px',
 		cursor: 'pointer',
 		height: '100%',
 		display: 'flex'
 	}
 }));
 
-const defaultMargin = { top: 10, bottom: 40, left: 30, right: 0 };
+const defaultMargin = { top: 10, bottom: 40, left: 30, right: 20 };
 
 const getDate = d => d.timestamp;
 
