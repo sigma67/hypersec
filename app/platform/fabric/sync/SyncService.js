@@ -598,6 +598,15 @@ class SyncServices {
 					readSet = txObj.payload.data.last_update.payload.data.config_update.read_set;
 					writeSet = txObj.payload.data.last_update.payload.data.config_update.write_set;
 
+					const notify = {
+						notify_type: fabric_const.NOTITY_TYPE_CONFIG,
+						title: `CONFIG transaction in Block ${block.header.number.toString()}`,
+						type: 'config',
+						message: `Tx ${txid.substr(0,12)} on ${channel_name},`,
+						time: createdt,
+					};
+
+					_self.platform.send(notify);
 				}
 
 				const read_set = JSON.stringify(readSet, null, 2);
@@ -633,6 +642,7 @@ class SyncServices {
 						channel_genesis_hash
 					);
 				}
+
 				/* eslint-enable */
 				const transaction_row = {
 					blockid: block.header.number.toString(),
@@ -680,9 +690,9 @@ class SyncServices {
 					notify_type: fabric_const.NOTITY_TYPE_BLOCK,
 					network_id,
 					channel_name,
-					title: `Block ${block.header.number.toString()} added to Channel: ${channel_name}`,
+					title: `Block ${block.header.number.toString()} added to ${channel_name}`,
 					type: 'block',
-					message: `Block ${block.header.number.toString()} established with ${
+					message: `Block ${block.header.number.toString()} contains ${
 						block.data.data.length
 					} tx`,
 					time: createdt,
