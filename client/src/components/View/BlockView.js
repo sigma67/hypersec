@@ -7,8 +7,15 @@ import { withStyles } from '@material-ui/core/styles';
 import FontAwesome from 'react-fontawesome';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { Table, Card, CardBody, CardTitle } from 'reactstrap';
-import { blockHashType, onCloseType } from '../types';
+import {
+	blockHashType,
+	getTransactionType,
+	onCloseType,
+	transactionType
+} from '../types';
 import Modal from '../Styled/Modal';
+import Dialog from "@material-ui/core/Dialog";
+import TransactionView from "./TransactionView";
 
 const styles = theme => ({
 	cubeIcon: {
@@ -18,13 +25,31 @@ const styles = theme => ({
 });
 
 export class BlockView extends Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			dialogOpen: false
+		}
+	}
+
 	handleClose = () => {
 		const { onClose } = this.props;
 		onClose();
 	};
 
+	handleDialogOpen = async tid => {
+		const { getTransaction, currentChannel } = this.props;
+		await getTransaction(currentChannel, tid);
+		this.setState({ dialogOpen: true });
+	};
+
+	handleDialogClose = () => {
+		this.setState({ dialogOpen: false });
+	};
+
 	render() {
-		const { blockHash, classes } = this.props;
+		const { transaction, blockHash, classes } = this.props;
+		const { dialogOpen } = this.state;
 		if (!blockHash) {
 			return (
 				<Modal>
@@ -120,10 +145,44 @@ export class BlockView extends Component {
 												</button>
 											</td>
 										</tr>
+										<tr>
+											<th>Transactions</th>
+											<td>
+												{ blockHash.txhash.map(tid => (
+												<li
+													key={tid}
+													style={{
+														overflow: 'hidden',
+														whiteSpace: 'nowrap',
+														textOverflow: 'ellipsis'
+													}}
+												>
+													<a
+														onClick={() => this.handleDialogOpen(tid)}
+														href="#/blocks"
+													>
+														{tid}
+													</a>
+												</li>
+												))}
+											</td>
+										</tr>
 									</tbody>
 								</Table>
 							</CardBody>
 						</Card>
+
+						<Dialog
+							open={dialogOpen}
+							onClose={this.handleDialogClose}
+							fullWidth
+							maxWidth="md"
+						>
+							<TransactionView
+								transaction={transaction}
+								onClose={this.handleDialogClose}
+							/>
+						</Dialog>
 					</div>
 				)}
 			</Modal>
@@ -133,7 +192,13 @@ export class BlockView extends Component {
 
 BlockView.propTypes = {
 	blockHash: blockHashType.isRequired,
-	onClose: onCloseType.isRequired
+	onClose: onCloseType.isRequired,
+	getTransaction: getTransactionType.isRequired,
+	transaction: transactionType
+};
+
+BlockView.defaultProps = {
+	transaction: null
 };
 
 export default withStyles(styles)(BlockView);

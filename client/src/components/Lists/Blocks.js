@@ -12,14 +12,11 @@ import moment from 'moment';
 import { isNull } from 'util';
 import ReactTable from '../Styled/Table';
 import BlockView from '../View/BlockView';
-import TransactionView from '../View/TransactionView';
 import MultiSelect from '../Styled/MultiSelect';
 import DatePicker from '../Styled/DatePicker';
 import {
 	blockListType,
-	currentChannelType,
-	getTransactionType,
-	transactionType
+	currentChannelType
 } from '../types';
 
 /* istanbul ignore next */
@@ -101,7 +98,6 @@ export class Blocks extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			dialogOpen: false,
 			dialogOpenBlockHash: false,
 			err: false,
 			search: false,
@@ -172,18 +168,8 @@ export class Blocks extends Component {
 		await this.props.getBlockListSearch(channelhash, query);
 	};
 
-	handleDialogOpen = async tid => {
-		const { getTransaction, currentChannel } = this.props;
-		await getTransaction(currentChannel, tid);
-		this.setState({ dialogOpen: true });
-	};
-
 	handleMultiSelect = value => {
 		this.setState({ orgs: value });
-	};
-
-	handleDialogClose = () => {
-		this.setState({ dialogOpen: false });
 	};
 
 	handleSearch = async () => {
@@ -351,41 +337,13 @@ export class Blocks extends Component {
 			width: 150
 		},
 		{
-			Header: 'Transactions',
-			accessor: 'txhash',
-			className: classes.hash,
-			Cell: row => (
-				<ul>
-					{!isNull(row.value)
-						? row.value.map(tid => (
-								<li
-									key={tid}
-									style={{
-										overflow: 'hidden',
-										whiteSpace: 'nowrap',
-										textOverflow: 'ellipsis'
-									}}
-								>
-									<a
-										className={classes.partialHash}
-										onClick={() => this.handleDialogOpen(tid)}
-										href="#/blocks"
-									>
-										<div className={classes.lastFullHash} id="showTransactionId">
-											{tid}
-										</div>{' '}
-										{tid.slice(0, 6)} {!tid ? '' : '... '}
-									</a>
-								</li>
-						  ))
-						: 'null'}
-				</ul>
-			),
+			Header: 'Timestamp',
+			accessor: 'createdt',
 			filterMethod: (filter, rows) =>
 				matchSorter(
 					rows,
 					filter.value,
-					{ keys: ['txhash'] },
+					{ keys: ['createdt'] },
 					{ threshold: matchSorter.rankings.SIMPLEMATCH }
 				),
 			filterAll: true
@@ -409,8 +367,8 @@ export class Blocks extends Component {
 		const blockList = this.state.search
 			? this.props.blockListSearch
 			: this.props.blockList;
-		const { transaction, classes } = this.props;
-		const { blockHash, dialogOpen, dialogOpenBlockHash } = this.state;
+		const { classes, transaction, getTransaction } = this.props;
+		const { blockHash, dialogOpenBlockHash } = this.state;
 		return (
 			<div>
 				<div className={`${classes.filter} row searchRow`}>
@@ -523,18 +481,6 @@ export class Blocks extends Component {
 				/>
 
 				<Dialog
-					open={dialogOpen}
-					onClose={this.handleDialogClose}
-					fullWidth
-					maxWidth="md"
-				>
-					<TransactionView
-						transaction={transaction}
-						onClose={this.handleDialogClose}
-					/>
-				</Dialog>
-
-				<Dialog
 					open={dialogOpenBlockHash}
 					onClose={this.handleDialogCloseBlockHash}
 					fullWidth
@@ -542,6 +488,8 @@ export class Blocks extends Component {
 				>
 					<BlockView
 						blockHash={blockHash}
+						transaction={transaction}
+						getTransaction={getTransaction}
 						onClose={this.handleDialogCloseBlockHash}
 					/>
 				</Dialog>
@@ -552,13 +500,7 @@ export class Blocks extends Component {
 
 Blocks.propTypes = {
 	blockList: blockListType.isRequired,
-	currentChannel: currentChannelType.isRequired,
-	getTransaction: getTransactionType.isRequired,
-	transaction: transactionType
-};
-
-Blocks.defaultProps = {
-	transaction: null
+	currentChannel: currentChannelType.isRequired
 };
 
 export default withStyles(styles)(Blocks);
