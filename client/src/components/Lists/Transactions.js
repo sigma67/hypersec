@@ -57,9 +57,6 @@ function Transactions({
 						onClick={() => handleDialogOpen(row.value)}
 						href="#/transactions"
 					>
-						<div id="showTransactionId">
-							{row.value}
-						</div>{' '}
 						{row.value.slice(0, 6)}
 						{!row.value ? '' : '... '}
 					</a>

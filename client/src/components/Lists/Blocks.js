@@ -9,7 +9,6 @@ import { Button } from 'reactstrap';
 import matchSorter from 'match-sorter';
 import find from 'lodash/find';
 import moment from 'moment';
-import { isNull } from 'util';
 import ReactTable from '../Styled/Table';
 import BlockView from '../View/BlockView';
 import MultiSelect from '../Styled/MultiSelect';
@@ -32,12 +31,12 @@ const styles = theme => {
 		partialHash: {
 			textAlign: 'center',
 			position: 'relative !important',
+			marginBottom: '0',
 			'&:hover $fullHash': {
 				display: 'block',
 				position: 'absolute !important',
 				padding: '4px 4px',
 				backgroundColor: dark ? '#5e558e' : '#000000',
-				marginTop: -30,
 				marginLeft: -215,
 				borderRadius: 8,
 				color: '#ffffff',
@@ -48,7 +47,6 @@ const styles = theme => {
 				position: 'absolute !important',
 				padding: '4px 4px',
 				backgroundColor: dark ? '#5e558e' : '#000000',
-				marginTop: -30,
 				marginLeft: -415,
 				borderRadius: 8,
 				color: '#ffffff',
@@ -266,9 +264,9 @@ export class Blocks extends Component {
 					<ul className={classes.partialHash} href="#/blocks">
 						<div className={classes.fullHash} id="showTransactionId">
 							{row.value}
-						</div>{' '}
-						{row.value.slice(0, 6)} {!row.value ? '' : '... '}
-					</ul>{' '}
+						</div>
+						{row.value.slice(0, 12)} {!row.value ? '' : '... '}
+					</ul>
 				</span>
 			),
 			filterMethod: (filter, rows) =>
@@ -295,7 +293,7 @@ export class Blocks extends Component {
 						<div className={classes.fullHash} id="showTransactionId">
 							{row.value}
 						</div>{' '}
-						{row.value.slice(0, 6)} {!row.value ? '' : '... '}
+						{row.value.slice(0, 12)} {!row.value ? '' : '... '}
 					</a>{' '}
 				</span>
 			),
@@ -464,7 +462,7 @@ export class Blocks extends Component {
 				<ReactTable
 					data={blockList}
 					columns={this.reactTableSetup(classes)}
-					defaultPageSize={10}
+					defaultPageSize={15}
 					list
 					filterable
 					sorted={this.state.sorted}
@@ -476,7 +474,6 @@ export class Blocks extends Component {
 						this.setState({ filtered });
 					}}
 					minRows={0}
-					style={{ height: '750px' }}
 					showPagination={!(blockList.length < 5)}
 				/>
 
