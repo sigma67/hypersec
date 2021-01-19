@@ -31,7 +31,8 @@ function Transactions({
 					{ keys: ['creator_msp_id'] },
 					{ threshold: matchSorter.rankings.SIMPLEMATCH }
 				),
-			filterAll: true
+			filterAll: true,
+			width: 150
 		},
 		{
 			Header: 'Channel Name',
@@ -43,7 +44,8 @@ function Transactions({
 					{ keys: ['channelname'] },
 					{ threshold: matchSorter.rankings.SIMPLEMATCH }
 				),
-			filterAll: true
+			filterAll: true,
+			width: 150
 		},
 		{
 			Header: 'Tx Id',
@@ -57,9 +59,6 @@ function Transactions({
 						onClick={() => handleDialogOpen(row.value)}
 						href="#/transactions"
 					>
-						<div id="showTransactionId">
-							{row.value}
-						</div>{' '}
 						{row.value.slice(0, 6)}
 						{!row.value ? '' : '... '}
 					</a>
@@ -72,7 +71,8 @@ function Transactions({
 					{ keys: ['txhash'] },
 					{ threshold: matchSorter.rankings.SIMPLEMATCH }
 				),
-			filterAll: true
+			filterAll: true,
+			width: 150
 		},
 		{
 			Header: 'Type',
@@ -119,6 +119,19 @@ function Transactions({
 					rows,
 					filter.value,
 					{ keys: ['sender'] },
+					{ threshold: matchSorter.rankings.SIMPLEMATCH }
+				),
+			filterAll: true
+		},
+		{
+			Header: 'Size (bytes)',
+			id: 'size',
+			accessor: 'size',
+			filterMethod: (filter, rows) =>
+				matchSorter(
+					rows,
+					filter.value,
+					{ keys: ['size'] },
 					{ threshold: matchSorter.rankings.SIMPLEMATCH }
 				),
 			filterAll: true
