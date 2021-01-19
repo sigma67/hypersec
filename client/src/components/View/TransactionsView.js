@@ -11,7 +11,7 @@ import TransactionBrush from '../Charts/TransactionBrush';
 import TransactionSize from '../Charts/TransactionSize';
 import TransactionTime from '../Charts/TransactionTime';
 import TransactionCount from '../Charts/TransactionCount';
-import { schemePastel2, schemeSet2 } from 'd3-scale-chromatic';
+import { schemeTableau10 } from 'd3-scale-chromatic';
 import { scaleOrdinal } from '@visx/scale';
 import { Row, Col } from 'reactstrap';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
@@ -40,6 +40,8 @@ import {
 } from '../types';
 import { timeFormat } from 'd3-time-format';
 import {timeDay, timeHour, timeMinute, timeMonth, timeSecond, timeWeek, timeYear} from 'd3-time';
+import Button from '@material-ui/core/Button';
+import UpdateIcon from '@material-ui/icons/Update';
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
@@ -142,9 +144,12 @@ function TransactionsView({
 	const [organisations, setOrganisations] = useState([]);
 	const [displayedOrgs, setDisplayedOrgs] = useState([]);
 	const [msPerBin, setMsPerBin] = useState(3600000);
+	const [msPerSizeBin, setMsPerSizeBin] = useState(0);
 	const [avgTrxSize, setAvgTrxSize] = useState(0);
 	const [err, setErr] = useState(false);
 	const [selectedBins, setSelectedBins] = useState([]);
+	const [sizeBins, setSizeBins] = useState([]);
+	const [selectedSizeBins, setSelectedSizeBins] = useState([]);
 	const [selectedTrx, setSelectedTrx] = useState([]);
 	const [selectedMtrx, setSelectedMtrx] = useState([]);
 	const [selectedFrom, setSelectedFrom] = useState(start);
@@ -152,15 +157,8 @@ function TransactionsView({
 
 	const orgsColorScale = useMemo(() => {
 		return scaleOrdinal({
-			range: ['#58c5c2', ...schemePastel2],
-			domain: ['total', ...organisations]
-		});
-	}, [organisations]);
-
-	const orgsHoverColorScale = useMemo(() => {
-		return scaleOrdinal({
-			range: ['#58c5c2', ...schemeSet2],
-			domain: ['total', ...organisations]
+			range: [...schemeTableau10],
+			domain: [...organisations]
 		});
 	}, [organisations]);
 
@@ -168,7 +166,7 @@ function TransactionsView({
 		formatSecond = timeFormat(":%S"),
 		formatMinute = timeFormat("%H:%M"),
 		formatHour = timeFormat("%H:%M"),
-		formatDay = timeFormat("%a %d"),
+		formatDay = timeFormat("%d.%m."),
 		formatWeek = timeFormat("%b %d"),
 		formatMonth = timeFormat("%B"),
 		formatYear = timeFormat("%Y");
@@ -186,8 +184,10 @@ function TransactionsView({
 	const binTimeFormat = date => {
 		switch (msPerBin) {
 			case 60000: //1m
+				const fromMins = moment(date).minutes() < 10 ? `0${moment(date).minutes()}` : moment(date).minutes();
+				const toMins = moment(date + msPerBin).minutes() < 10 ? `0${moment(date + msPerBin).minutes()}` : moment(date + msPerBin).minutes();
 				return timeFormat(
-					`${moment(date).hours()}:${moment(date).minutes()}-${moment(date).hours()}:${moment(date + msPerBin).minutes()}`
+					`${moment(date).hours()}:${fromMins}-${moment(date).hours()}:${toMins}`
 				);
 			case 3600000: //1h
 				return timeFormat(
@@ -217,6 +217,10 @@ function TransactionsView({
 			await handleSearch();
 		}
 		fetchData();
+		if (end.valueOf() - start.valueOf() > 10800000 && msPerBin < 3600000) setMsPerBin(3600000); //if msPerBin = 1min and range > 3h set msPerBin = 1h
+		if (end.valueOf() - start.valueOf() > 604800000 && msPerBin < 43200000) setMsPerBin(43200000); //if msPerBin = 1h and range > 7d set msPerBin = 12h
+		setMsPerSizeBin(Math.floor((end.valueOf() - start.valueOf()) / 100)); //max 100 container for size
+
 	}, [start, end]);
 
 	useEffect(() => {
@@ -224,7 +228,7 @@ function TransactionsView({
 		transactionByOrg.forEach(element =>
 			tempOrganisations.push(element.creator_msp_id)
 		);
-		setOrganisations(tempOrganisations);
+		setOrganisations(tempOrganisations.sort());
 	}, [transactionByOrg]);
 
 	useEffect(() => {
@@ -242,8 +246,9 @@ function TransactionsView({
 
 	useEffect(() => {
 		getAvgTransactionSize();
-		binTrx(transactions);
-	}, [transactions, msPerBin, binTrx]);
+		binTrx();
+		buildSizeBins();
+	}, [transactions, msPerBin, binTrx, buildSizeBins]);
 
 	useEffect(() => {
 		if (displayedOrgs.length === 0) {
@@ -269,9 +274,7 @@ function TransactionsView({
 		const startBin = Math.floor(start.valueOf() / msPerBin) * msPerBin;
 		const endBin = Math.floor(end.valueOf() / msPerBin) * msPerBin;
 		transactions.forEach(transaction => {
-			const trxBinTimeStamp =
-				Math.floor(moment.utc(transaction.createdt).valueOf() / msPerBin) *
-				msPerBin;
+			const trxBinTimeStamp =	Math.floor(moment.utc(transaction.createdt).valueOf() / msPerBin) * msPerBin;
 			if (trxBinTimeStamp < startBin || trxBinTimeStamp > endBin) return;
 			bins
 				.find(bin => bin.timestamp === trxBinTimeStamp)
@@ -284,8 +287,33 @@ function TransactionsView({
 		setSelectedBins(bins);
 	}, [transactions, msPerBin, start, end, organisations]);
 
+	const buildSizeBins = useCallback(() => {
+		let currentBinTime = Math.floor(start.valueOf() / msPerSizeBin) * msPerSizeBin;
+		let bins = [];
+		while (currentBinTime < end.valueOf()) {
+			const bin = { timestamp: currentBinTime, totalSize: 0, totalCount: 0 };
+			organisations.forEach(org => {
+				bin[org] = { size: 0, count: 0};
+			});
+			bins.push(bin);
+			currentBinTime += msPerSizeBin;
+		}
+
+		transactions.forEach(tx => {
+			const binTimestamp = Math.floor(moment.utc(tx.createdt).valueOf() / msPerSizeBin) * msPerSizeBin;
+			const bin = bins.filter(bin => bin.timestamp === binTimestamp)[0];
+			if ( !bin || !bin[tx.creator_msp_id] ) return;
+			bin.totalSize += tx.size;
+			bin.totalCount ++;
+			bin[tx.creator_msp_id].size += tx.size;
+			bin[tx.creator_msp_id].count ++;
+		});
+
+		setSizeBins(bins);
+		setSelectedSizeBins(bins);
+	}, [transactions, msPerBin, start, end, organisations]);
+
 	const handleDisplayedOrgsChanged = org => {
-		if (org === 'total') return;
 		const tempOrgs = [...displayedOrgs];
 		const index = tempOrgs.indexOf(org);
 		index > -1 ? tempOrgs.splice(index, 1) : tempOrgs.push(org);
@@ -319,7 +347,7 @@ function TransactionsView({
 		setLoading(true);
 		handleBrushSelection([]);
 		await searchTransactionList();
-		await getMetrics(start / 1000, end / 1000);
+		await getMetrics(start / 1000, Math.min(end / 1000, Date.now() / 1000));
 		setLoading(false);
 	};
 
@@ -328,6 +356,7 @@ function TransactionsView({
 		const mtrxSelection = [];
 		if (selectedBinTimestamps.length < 1) {
 			setSelectedBins(binnedTrx);
+			setSelectedSizeBins(sizeBins);
 			setSelectedTrx(transactions);
 			setSelectedMtrx(metrics);
 			setSelectedFrom(start);
@@ -348,9 +377,15 @@ function TransactionsView({
 				trxSelection.push(...bin.total);
 			}
 		});
+
 		setSelectedBins(
 			binnedTrx.filter(bin => selectedBinTimestamps.indexOf(bin.timestamp) > -1)
 		);
+
+		setSelectedSizeBins(
+			sizeBins.filter(bin => bin.timestamp >= selectedBinTimestamps[0] && bin.timestamp <= selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin)
+		);
+
 		setSelectedTrx(trxSelection);
 		setSelectedMtrx(mtrxSelection);
 		setSelectedFrom(selectedBinTimestamps[0]);
@@ -376,7 +411,7 @@ function TransactionsView({
 					<Card className={`${classes.smallSection}`} variant="outlined">
 						<CardContent>
 							<Row>
-								<Col xs={5}>
+								<Col xs={4}>
 									<MuiPickersUtilsProvider utils={MomentUtils}>
 										<DateTimePicker
 											disableFuture
@@ -408,7 +443,7 @@ function TransactionsView({
 										/>
 									</MuiPickersUtilsProvider>
 								</Col>
-								<Col xs={5}>
+								<Col xs={4}>
 									<MuiPickersUtilsProvider utils={MomentUtils}>
 										<DateTimePicker
 											disableFuture
@@ -440,7 +475,22 @@ function TransactionsView({
 										/>
 									</MuiPickersUtilsProvider>
 								</Col>
-								<Col xs={2}>
+								<Col xs={1}>
+									<Button
+										variant="contained"
+										color="default"
+										style={{ width: 100 + '%', marginTop: '10px' }}
+										startIcon={<UpdateIcon />}
+										onClick={async () => {
+											setEnd(moment());
+											setSelectedTo(moment());
+											await handleSearch();
+											setErr(false);
+										}}>
+										Refresh
+									</Button>
+								</Col>
+								<Col xs={3}>
 									<FormControl style={{ width: 100 + '%' }}>
 										<InputLabel id="ms-per-bin-select-label">
 											Transactions per
@@ -497,7 +547,6 @@ function TransactionsView({
 												width={width}
 												height={height}
 												colorScale={orgsColorScale}
-												hoverColorScale={orgsHoverColorScale}
 												data={selectedBins}
 												msPerBin={msPerBin}
 												displayedOrgs={displayedOrgs}
@@ -514,9 +563,10 @@ function TransactionsView({
 												width={width}
 												height={height}
 												colorScale={orgsColorScale}
-												data={selectedTrx}
+												data={selectedSizeBins}
 												from={selectedFrom}
 												to={selectedTo}
+												msPerBin={msPerSizeBin}
 												avgTrxSize={avgTrxSize || 1}
 												displayedOrgs={displayedOrgs}
 												onDisplayedOrgsChange={handleDisplayedOrgsChanged}

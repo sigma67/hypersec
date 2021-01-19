@@ -1,16 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, {useState, useEffect, useMemo, useCallback} from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 import { scaleLinear, scaleBand } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
-import { BarStack } from '@visx/shape';
+import {Bar, BarStack, Line} from '@visx/shape';
 import { Group } from '@visx/group';
 import { GridRows } from '@visx/grid';
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
-import { withTooltip, Tooltip, defaultStyles } from '@visx/tooltip';
+import {withTooltip, Tooltip, defaultStyles, TooltipWithBounds} from '@visx/tooltip';
 import moment from 'moment';
+import { localPoint } from '@visx/event';
 
 /* istanbul ignore next */
 const useStyles = makeStyles(theme => ({
@@ -18,14 +19,14 @@ const useStyles = makeStyles(theme => ({
 		lineHeight: '0.9em',
 		color: '#000',
 		fontSize: '11px',
-		marginLeft: '30px',
+		marginLeft: '50px',
 		cursor: 'pointer',
 		height: '100%',
 		display: 'flex'
 	}
 }));
 
-const defaultMargin = { top: 10, bottom: 40, left: 30, right: 20 };
+const defaultMargin = { top: 10, bottom: 40, left: 50, right: 0 };
 
 const getDate = d => d.timestamp;
 
@@ -35,7 +36,6 @@ export default withTooltip(
 		height,
 		margin = defaultMargin,
 		colorScale,
-		hoverColorScale,
 		msPerBin,
 		data,
 		displayedOrgs,
@@ -54,10 +54,11 @@ export default withTooltip(
 		const yMax = height - margin.top - margin.bottom;
 
 		const [maxTrxCount, setMaxTrxCount] = useState(0);
+
 		useEffect(() => {
 			let maxValue = 0;
 			if (data.length < 1) return;
-			data.forEach(bin => {
+			data.forEach((bin, index) => {
 				maxValue = bin.total.length > maxValue ? bin.total.length : maxValue;
 			});
 			setMaxTrxCount(maxValue);
@@ -83,29 +84,60 @@ export default withTooltip(
 			[yMax, maxTrxCount]
 		);
 
-		const [hoveredBar, setHoveredBar] = useState();
-		const getColor = (key, index) => {
-			if (hoveredBar) {
-				return index === hoveredBar.index && key === hoveredBar.key
-					? hoverColorScale(key)
-					: colorScale(key);
+		const [hoveredBarStack, setHoveredBarStack] = useState();
+		const getOpacity = (key, index) => {
+			if (hoveredBarStack) {
+				return index === hoveredBarStack.index	? 1 : 0.7;
 			} else {
-				return colorScale(key);
+				return 0.7;
 			}
 		};
+
+		const handleTooltip = useCallback(
+			event => {
+				const point = localPoint(event) || {
+					x: 0,
+					y: 0
+				};
+				const tempIndex = Math.floor((point.x - margin.left - margin.right) / xScale.step());
+				const index = Math.max(0, Math.min(tempIndex, xScale.domain().length-1));
+				const binTimestamp = xScale.domain()[index];
+				const bin = data.filter(d => d.timestamp === binTimestamp)[0];
+
+				setHoveredBarStack({
+					index: index,
+				});
+
+				const orgCounts = [];
+				displayedOrgs.forEach(org => {
+					if (org === 'total') return;
+					orgCounts.push({key: org, value: bin[org].length});
+				});
+
+				showTooltip({
+					tooltipData: {time: binTimestamp, orgCounts: orgCounts},
+					tooltipLeft: xScale(binTimestamp) + xScale.bandwidth() / 2
+				})
+
+			}, [showTooltip, setHoveredBarStack, data, displayedOrgs, margin.left, margin.right, xScale, yScale]
+		);
 
 		return (
 			<React.Fragment>
 				<Grid container>
 					<Grid item xs={12}>
 						<Typography component="div">
-							<Box m={1}>Transactions Count</Box>
+							<Box m={1}>Transaction Count</Box>
 						</Typography>
 					</Grid>
-					<Grid item xs={4}>
-						<svg width={width} height={height}>
-							<Group top={margin.top} left={margin.left}>
-								<Group>
+					<Grid item xs={12}>
+						<svg
+							width={width}
+							height={height}
+						>
+							<Group
+								top={margin.top}
+								left={margin.left}>
 									<GridRows
 										scale={yScale}
 										width={xMax}
@@ -113,8 +145,7 @@ export default withTooltip(
 										stroke="#919191"
 										strokeOpacity={0.3}
 										pointerEvents="none"
-										numTicks={8}
-									/>
+										numTicks={8} />
 									<BarStack
 										data={data}
 										keys={displayedOrgs}
@@ -122,8 +153,7 @@ export default withTooltip(
 										x={getDate}
 										xScale={xScale}
 										yScale={yScale}
-										color={(d, k) => getColor(d, k)}
-									>
+										color={(d) => colorScale(d)} >
 										{barStacks =>
 											barStacks.map(barStack =>
 												barStack.bars.map(bar => {
@@ -133,69 +163,75 @@ export default withTooltip(
 															key={`bar-stack-${barStack.index}-${bar.index}`}
 															x={bar.x}
 															y={bar.y}
-															height={bar.height}
+															height={bar.height < 0 ? 0 : bar.height}
 															width={bar.width}
 															fill={bar.color}
 															stroke="#fff"
-															onMouseEnter={() => {
-																setHoveredBar({
-																	index: bar.index,
-																	key: bar.key
-																});
-																showTooltip({
-																	tooltipLeft: bar.x + margin.left,
-																	tooltipTop: yScale(bar.bar[0]),
-																	tooltipData: { key: bar.key, data: bar.bar }
-																});
-															}}
-															onMouseLeave={() => {
-																setHoveredBar();
-																hideTooltip();
-															}}
-														/>
+															opacity={getOpacity(bar.key, bar.index)} />
 													);
 												})
 											)
 										}
 									</BarStack>
-								</Group>
+								<Bar
+									x = {0}
+									y={0}
+									width={xMax < 0 ? 0 : xMax}
+									height={yMax < 0 ? 0 : yMax}
+									fill="transparent"
+									rx={14}
+									onTouchStart={handleTooltip}
+									onTouchMove={handleTooltip}
+									onMouseMove={handleTooltip}
+									onMouseLeave={() => { hideTooltip(); setHoveredBarStack(); } }/>
 								<AxisBottom
 									scale={xScale}
 									top={yMax}
 									tickFormat={formatBinTime}
-									// 						numTicks={width > 1920 ? 5 : 10}
-									numTicks={5}
-								/>
-								<AxisLeft scale={yScale} numTicks={4} />
+									numTicks={5} />
+								<AxisLeft
+									scale={yScale}
+									numTicks={4} />
+								{tooltipData && (
+									<Line
+										from={{ x: tooltipLeft, y: 0 }}
+										to={{ x: tooltipLeft, y: yMax }}
+										stroke="#919191"
+										strokeWidth={1}
+										pointerEvents="none"
+										strokeDasharray="5,2"	/>
+								)}
 							</Group>
 						</svg>
 						{tooltipData && (
 							<div>
+								<TooltipWithBounds
+									key={`tooltip-circle-${tooltipData.time}-tooltip`}
+									top={30}
+									left={tooltipLeft + 47.5}
+									style={{...defaultStyles,	fontSize: '12px'}}
+								>
+									{tooltipData.orgCounts.map(orgCount => (
+										<div key={`tooltip-${orgCount.key}`}>
+											{`${orgCount.key}: `}<strong style={{color: colorScale(orgCount.key)}}>{`${orgCount.value} Tx`}</strong>
+										</div>
+									))}
+								</TooltipWithBounds>
+
 								<Tooltip
-									top={tooltipTop + 14}
-									left={tooltipLeft}
+									top={height}
+									left={tooltipLeft + 40}
 									style={{
 										...defaultStyles,
+										fontSize: '11px',
 										minWidth: 72,
 										textAlign: 'center',
-										transform: 'translateX(-50%)',
-										fontSize: '11px'
+										transform: 'translateX(-50%)'
 									}}
 								>
-									<div>
-										{`${moment(tooltipData.data['data']).format(
-												'DD.MM.'
-											)}, ${moment(
-												tooltipData.data['data'].timestamp
-											).hours()}:00 - ${moment(
-												tooltipData.data['data'].timestamp + msPerBin
-											).hours()}:00: `
-										}
-										<strong style={{ fontWeight: 800 }}>
-											{tooltipData.data[1] - tooltipData.data[0]}
-										</strong>{' '}
-										trx
-									</div>
+									<strong>
+										{`${moment(tooltipData.time).format('DD.MM., kk:mm')} - ${moment(tooltipData.time + msPerBin).format('kk:mm')}`}
+									</strong>
 								</Tooltip>
 							</div>
 						)}

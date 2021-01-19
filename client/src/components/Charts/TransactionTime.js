@@ -5,18 +5,14 @@ import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 import { scaleTime, scaleLinear, scaleOrdinal } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
-import { AreaStack, Line } from '@visx/shape';
+import { AreaStack, Line, Bar } from '@visx/shape';
 import { curveLinear } from '@visx/curve';
 import { Group } from '@visx/group';
 import { GridRows, GridColumns } from '@visx/grid';
-
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
-import {withTooltip,
-	Tooltip,
-	TooltipWithBounds,
-	defaultStyles} from '@visx/tooltip';
+import {withTooltip, Tooltip, TooltipWithBounds, defaultStyles} from '@visx/tooltip';
 import { localPoint } from '@visx/event';
-import { schemePastel1 } from 'd3-scale-chromatic';
+import { schemeDark2 } from 'd3-scale-chromatic';
 import { max, bisector } from 'd3-array';
 import { stack } from 'd3-shape';
 import moment from 'moment';
@@ -56,17 +52,14 @@ export default withTooltip(
 		customTimeAxisFormat
 	}) => {
 		const classes = useStyles();
-
 		const xMax = width - margin.left - margin.right;
 		const yMax = height - margin.top - margin.bottom;
-
 		const [yMaxValue, setYMaxValue] = useState(0);
-
 		const [displayedKeys, setDisplayedKeys] = useState(keys);
 
 		const areaColorScale = useMemo(() => {
 			return scaleOrdinal({
-				range: schemePastel1,
+				range: schemeDark2,
 				domain: keys
 			});
 		}, []);
@@ -116,10 +109,7 @@ export default withTooltip(
 						const d1 = dataStacks[keyIndex][index - 1];
 						let d = d0;
 						if (d1 && d1.time * 1000) {
-							d =
-								x0.valueOf() - d0.time * 1000 > d1.time * 1000 - x0.valueOf()
-									? d1
-									: d0;
+							d =	x0.valueOf() - d0.time * 1000 > d1.time * 1000 - x0.valueOf()	? d1 : d0;
 						}
 						tooltipCircles.push({
 							key: key,
@@ -155,48 +145,54 @@ export default withTooltip(
 						</Typography>
 					</Grid>
 					<Grid item xs={12}>
-						<svg width={width} height={height}>
+						<svg	width={width}	height={height}>
 							<Group top={margin.top} left={margin.left}>
-								<Group>
-									<GridRows
-										scale={yScale}
-										width={xMax}
-										strokeDasharray="3,3"
-										stroke="#919191"
-										strokeOpacity={0.3}
-										pointerEvents="none"
-										numTicks={4}
-									/>
-									<GridColumns
-										scale={xScale}
-										height={yMax}
-										strokeDasharray="3,3"
-										stroke="#919191"
-										strokeOpacity={0.3}
-										pointerEvents="none"
-										numTicks={width > 520 ? 8 : 5}
-									/>
-									<AreaStack
-										top={defaultMargin.top}
-										left={defaultMargin.left}
-										keys={displayedKeys}
-										data={data}
-										x={d => xScale(d.data.time * 1000)}
-										y0={d => yScale(d[0] * 1000) || 0}
-										y1={d => yScale(d[1] * 1000) || 0}
-										color={d => areaColorScale(d)}
-										curve={curveLinear}
-										onMouseMove={event => handleTooltip(event)}
-										onMouseLeave={() => hideTooltip()}
-									/>
-								</Group>
+								<GridRows
+									scale={yScale}
+									width={xMax}
+									strokeDasharray="3,3"
+									stroke="#919191"
+									strokeOpacity={0.3}
+									pointerEvents="none"
+									numTicks={4} />
+								<GridColumns
+									scale={xScale}
+									height={yMax}
+									strokeDasharray="3,3"
+									stroke="#919191"
+									strokeOpacity={0.3}
+									pointerEvents="none"
+									numTicks={width > 520 ? 8 : 5} />
+								<AreaStack
+									top={defaultMargin.top}
+									left={defaultMargin.left}
+									keys={displayedKeys}
+									data={data}
+									x={d => xScale(d.data.time * 1000)}
+									y0={d => yScale(d[0] * 1000) || 0}
+									y1={d => yScale(d[1] * 1000) || 0}
+									color={d => areaColorScale(d)}
+									opacity={0.7}
+									curve={curveLinear} />
+								<Bar
+									x = {0}
+									y= {0}
+									width={xMax < 0 ? 0 : xMax}
+									height={yMax < 0 ? 0 : yMax}
+									fill="transparent"
+									rx={14}
+									onTouchStart={handleTooltip}
+									onTouchMove={handleTooltip}
+									onMouseMove={handleTooltip}
+									onMouseLeave={() => hideTooltip()}/>
 								<AxisBottom
 									scale={xScale}
 									top={yMax}
 									numTicks={width > 520 ? 8 : 5}
-									tickFormat={customTimeAxisFormat}
-								/>
-								<AxisLeft scale={yScale} numTicks={4} />
+									tickFormat={customTimeAxisFormat}	/>
+								<AxisLeft
+									scale={yScale}
+									numTicks={4} />
 								{tooltipData && (
 									<Group>
 										<Line
@@ -223,22 +219,20 @@ export default withTooltip(
 								)}
 							</Group>
 						</svg>
+
 						{tooltipData && (
 							<div>
+								<TooltipWithBounds
+									key={`tooltip-circle-${tooltipData[0].time}-tooltip`}
+									top={30}
+									left={tooltipLeft + 47.5}
+									style={{...defaultStyles,	fontSize: '12px'}}
+								>
 								{tooltipData.map(keyCircle => (
-									<TooltipWithBounds
-										key={`tooltip-circle-${keyCircle.key}-tooltip`}
-										top={keyCircle.yValue + 30}
-										left={keyCircle.key === 'broadcast_enqueue' ? tooltipLeft - 25 : tooltipLeft + 47.5}
-										style={{
-											...defaultStyles,
+										<strong key={`tooltip-circle-${keyCircle.key}`} style={{color: areaColorScale(keyCircle.key)}}>{`${keyCircle.value} ms`}<br/></strong>
 
-											fontSize: '11px'
-										}}
-									>
-										<strong style={{color: areaColorScale(keyCircle.key)}}>{`${keyCircle.value} ms`}</strong>
-									</TooltipWithBounds>
 								))}
+								</TooltipWithBounds>
 
 								<Tooltip
 									top={height}
@@ -251,9 +245,9 @@ export default withTooltip(
 										transform: 'translateX(-50%)'
 									}}
 								>
-									<div>
+									<strong>
 										{moment(tooltipData[0].time).format('DD.MM., kk:mm:ss')}
-									</div>
+									</strong>
 								</Tooltip>
 							</div>
 						)}

@@ -6,6 +6,7 @@ import { Bar } from '@visx/shape';
 import { Group } from '@visx/group';
 import { Brush } from '@visx/brush';
 import { LinearGradient } from '@visx/gradient';
+import moment from 'moment';
 
 /* istanbul ignore next */
 /**
@@ -76,12 +77,17 @@ function TransactionBrush({
 		onBrushSelectionChange(domain.xValues);
 	};
 
+	const getTimeRangeString = () => {
+		if (selectedTrxBins.length < 1) return '';
+		return `${moment(selectedTrxBins[0].timestamp).format('DD.MM., kk:mm')} - ${moment(selectedTrxBins[selectedTrxBins.length-1].timestamp).format('DD.MM., kk:mm')}`
+	};
+
 	return (
 		<React.Fragment>
 			<Grid container>
 				<Grid item xs={4}>
 					<div>
-						<div>Drag to select a time frame:</div>
+						<div>Drag to select a time frame. Currently selected: {getTimeRangeString()}</div>
 					</div>
 					<svg width={width} height={height}>
 						<Group top={margin.top} left={margin.left}>
@@ -93,16 +99,6 @@ function TransactionBrush({
 									to={backgroundColor}
 									toOpacity={0.2}
 								/>
-								{/* <AreaClosed
-									data={total}
-									x = { d => xScale(d.timestamp) + xScale.bandwidth() / 2 }
-									y = { d => yScale(d.transactions.length) }
-									yScale = {yScale}
-									strokeWidth = {2}
-									stroke = "url(#gradient)"
-									fill = "url(#gradient)"
-									curve = {curveMonotoneX}
-								/> */}
 							</Group>
 							{total.map(d => {
 								const barX = xScale(d.timestamp); // + xScale.bandwidth() / 2;
@@ -143,12 +139,7 @@ function TransactionBrush({
 								scale={xScale}
 								top={yMax}
 								tickFormat={formatBinTime}
-								tickLabelProps={() => ({
-									fontSize: 11,
-									textAnchor: 'middle'
-								})}
-								numTicks={10}
-							/>
+								numTicks={10} />
 						</Group>
 					</svg>
 				</Grid>
