@@ -139,6 +139,7 @@ export default withTooltip(
 									data.map((bin) =>
 										displayedOrgs.map(org => {
 											if (!bin[org]) return <div/>;
+											if (bin[org].count < 1) return <div/>;
 											return (
 												<Circle
 													key={`point-${bin.timestamp}-${org}`}
@@ -146,7 +147,8 @@ export default withTooltip(
 													cy={yScale(bin[org].size / bin[org].count)}
 													fill={colorScale(org)}
 													opacity={getOpacity(bin.timestamp, org)}
-													r={bin[org].count < 15 ? bin[org].count : 15}
+													// r={bin[org].count < 15 ? bin[org].count : 15}
+													r = {5}
 													onMouseMove={event => {
 														const point = localPoint(event) || { x: 0, y: 0 };
 														setHoveredCircle({timestamp: bin.timestamp, org: org});
