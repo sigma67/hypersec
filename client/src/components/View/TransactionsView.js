@@ -272,7 +272,9 @@ function TransactionsView({
 	}, [transactions, msPerBin, start, end, organisations]);
 
 	const buildSizeBins = useCallback(() => {
-		let currentBinTime = Math.floor(start.valueOf() / msPerSizeBin) * msPerSizeBin;
+		if (msPerSizeBin < 500) return;
+
+		let currentBinTime = start.valueOf();
 		let bins = [];
 		while (currentBinTime < end.valueOf()) {
 			const bin = { timestamp: currentBinTime, totalSize: 0, totalCount: 0 };
@@ -284,18 +286,21 @@ function TransactionsView({
 		}
 
 		transactions.forEach(tx => {
-			const binTimestamp = Math.floor(moment.utc(tx.createdt).valueOf() / msPerSizeBin) * msPerSizeBin;
-			const bin = bins.filter(bin => bin.timestamp === binTimestamp)[0];
-			if ( !bin || !bin[tx.creator_msp_id] ) return;
-			bin.totalSize += tx.size;
-			bin.totalCount ++;
-			bin[tx.creator_msp_id].size += tx.size;
-			bin[tx.creator_msp_id].count ++;
+			const txBinTimestamp = moment(tx.createdt);
+			for (let i = 0; i < bins.length; i++) {
+				if (!bins[i+1] || (txBinTimestamp >= bins[i].timestamp && txBinTimestamp < bins[i+1].timestamp)) {
+					bins[i].totalSize += tx.size;
+					bins[i].totalCount ++;
+					bins[i][tx.creator_msp_id].size += tx.size;
+					bins[i][tx.creator_msp_id].count ++;
+					break;
+				}
+			}
 		});
 
 		setSizeBins(bins);
 		setSelectedSizeBins(bins);
-	}, [transactions, msPerBin, start, end, organisations]);
+	}, [transactions, msPerSizeBin, start, end, organisations]);
 
 	const handleDisplayedOrgsChanged = org => {
 		const tempOrgs = [...displayedOrgs];
