@@ -170,7 +170,6 @@ export default withTooltip(
 								<AxisBottom
 									scale={xScale}
 									top={yMax}
-									numTicks={xMax > 520 ? 8 : 5}
 									tickFormat={customTimeAxisFormat}	/>
 								<AxisLeft scale={yScale} numTicks={4} />
 							</Group>

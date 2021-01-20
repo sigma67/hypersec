@@ -182,33 +182,17 @@ function TransactionsView({
 	}
 
 	const binTimeFormat = date => {
+		const startDate = moment(date.valueOf());
+		const	endDate = moment(date.valueOf() + msPerBin);
 		switch (msPerBin) {
 			case 60000: //1m
-				const fromMins = moment(date).minutes() < 10 ? `0${moment(date).minutes()}` : moment(date).minutes();
-				const toMins = moment(date + msPerBin).minutes() < 10 ? `0${moment(date + msPerBin).minutes()}` : moment(date + msPerBin).minutes();
-				return timeFormat(
-					`${moment(date).hours()}:${fromMins}-${moment(date).hours()}:${toMins}`
-				);
+				return timeFormat(`${startDate.format('DD.MM., kk:mm')}-${endDate.format('kk:mm')}`);
 			case 3600000: //1h
-				return timeFormat(
-					`${moment(date).format('DD.MM.')}, ${moment(
-						date
-					).hours()}:00-${moment(date + msPerBin).hours()}:00`
-				);
+				return timeFormat(`${startDate.format('DD.MM., kk:mm')}-${endDate.format('kk:mm')}`);
 			case 43200000: //12h
-				return timeFormat(
-					`${moment(date).format('DD.MM.')}, ${moment(
-						date
-					).hours()}:00-${moment(date + msPerBin).hours()}:00`
-				);
+				return timeFormat(`${startDate.format('DD.MM., kk:mm')} - ${endDate.format('DD.MM., kk:mm')}`);
 			case 86400000: //24h
-				return timeFormat(
-					`${moment(date).format('DD.MM.')}, ${moment(
-						date
-					).hours()}:00 - ${moment(date + msPerBin).format('DD.MM.')}, ${moment(
-						date
-					).hours()}:00`
-				);
+				return timeFormat(`${startDate.format('DD.MM., kk:mm')} - ${endDate.format('DD.MM., kk:mm')}`);
 		}
 	};
 
@@ -219,7 +203,7 @@ function TransactionsView({
 		fetchData();
 		if (end.valueOf() - start.valueOf() > 10800000 && msPerBin < 3600000) setMsPerBin(3600000); //if msPerBin = 1min and range > 3h set msPerBin = 1h
 		if (end.valueOf() - start.valueOf() > 604800000 && msPerBin < 43200000) setMsPerBin(43200000); //if msPerBin = 1h and range > 7d set msPerBin = 12h
-		setMsPerSizeBin(Math.floor((end.valueOf() - start.valueOf()) / 100)); //max 100 container for size
+		setMsPerSizeBin(Math.floor((end.valueOf() - start.valueOf()) / 120)); //max 120 container for size
 
 	}, [start, end]);
 
@@ -258,34 +242,33 @@ function TransactionsView({
 
 
 	const binTrx = useCallback(() => {
-		let currentBinTime = Math.floor(start.valueOf() / msPerBin) * msPerBin;
+		let binStartTime = start.valueOf();
 		let bins = [];
-		while (currentBinTime <= end) {
-			const bin = { timestamp: currentBinTime, total: [] };
+		while(binStartTime < end.valueOf()) {
+			const bin = { timestamp: binStartTime, total: [] };
 			organisations.forEach(org => {
 				bin[org] = [];
 			});
 			bins.push(bin);
-			currentBinTime += msPerBin;
+			binStartTime += msPerBin;
 		}
 
-		const startBin = Math.floor(start.valueOf() / msPerBin) * msPerBin;
-		const endBin = Math.floor(end.valueOf() / msPerBin) * msPerBin;
-		transactions.forEach(transaction => {
-			const trxBinTimeStamp =	Math.floor(moment.utc(transaction.createdt).valueOf() / msPerBin) * msPerBin;
-			if (trxBinTimeStamp < startBin || trxBinTimeStamp > endBin) return;
-			bins
-				.find(bin => bin.timestamp === trxBinTimeStamp)
-				['total'].push(transaction);
-			bins
-				.find(bin => bin.timestamp === trxBinTimeStamp)
-				[transaction.creator_msp_id].push(transaction);
+		transactions.forEach(tx => {
+			const txBinTimestamp = moment(tx.createdt);
+			for (let i = 0; i < bins.length; i++) {
+				if (!bins[i+1] || (txBinTimestamp >= bins[i].timestamp && txBinTimestamp < bins[i+1].timestamp)) {
+					bins[i]['total'].push(tx);
+					bins[i][tx.creator_msp_id].push(tx);
+					break;
+				}
+			}
 		});
 
 		setBinnedTrx(bins);
-		setSelectedFrom(bins.length > 0 ? moment(bins[0].timestamp) : start);
-		setSelectedTo(bins.length > 0 ? moment(bins[bins.length-1].timestamp + msPerBin) : end);
 		setSelectedBins(bins);
+
+ 		setSelectedFrom(start);
+		setSelectedTo(end);
 	}, [transactions, msPerBin, start, end, organisations]);
 
 	const buildSizeBins = useCallback(() => {
@@ -360,21 +343,16 @@ function TransactionsView({
 			setSelectedSizeBins(sizeBins);
 			setSelectedTrx(transactions);
 			setSelectedMtrx(metrics);
-			setSelectedFrom(binnedTrx.length > 0 ? moment(binnedTrx[0].timestamp) : start);
-			setSelectedTo(binnedTrx.length > 0 ? moment(binnedTrx[binnedTrx.length-1].timestamp) : end);
+			setSelectedFrom(start);
 			setSelectedTo(end);
 			return;
 		}
 
 		metrics.forEach(bin => {
-			if (
-				selectedBinTimestamps.indexOf(
-					Math.floor((bin.time * 1000) / msPerBin) * msPerBin
-				) > -1
-			) {
-				mtrxSelection.push(bin);
-			}
+			const binTimestamp = bin.time * 1000;
+			if (binTimestamp >= selectedBinTimestamps[0] && binTimestamp <= selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin) mtrxSelection.push((bin));
 		});
+
 		binnedTrx.forEach(bin => {
 			if (selectedBinTimestamps.indexOf(bin.timestamp) > -1) {
 				trxSelection.push(...bin.total);
@@ -386,7 +364,7 @@ function TransactionsView({
 		);
 
 		setSelectedSizeBins(
-			sizeBins.filter(bin => bin.timestamp >= selectedBinTimestamps[0] && bin.timestamp <= selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin)
+			sizeBins.filter(bin => bin.timestamp > selectedBinTimestamps[0] && bin.timestamp < selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin)
 		);
 
 		setSelectedTrx(trxSelection);
@@ -534,7 +512,8 @@ function TransactionsView({
 												width={width}
 												height={height}
 												data={binnedTrx}
-												msPerBin={msPerBin}
+												start={start}
+												end={end}
 												onBrushSelectionChange={handleBrushSelection}
 												selectedTrxBins={selectedBins}
 												formatBinTime={binTimeFormat}
@@ -557,7 +536,6 @@ function TransactionsView({
 												msPerBin={msPerBin}
 												displayedOrgs={displayedOrgs}
 												onDisplayedOrgsChange={handleDisplayedOrgsChanged}
-												formatBinTime={binTimeFormat}
 												customTimeAxisFormat={customTimeAxisFormat}
 											/>
 										)}

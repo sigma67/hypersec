@@ -188,7 +188,6 @@ export default withTooltip(
 								<AxisBottom
 									scale={xScale}
 									top={yMax}
-									numTicks={width > 520 ? 8 : 5}
 									tickFormat={customTimeAxisFormat}	/>
 								<AxisLeft
 									scale={yScale}

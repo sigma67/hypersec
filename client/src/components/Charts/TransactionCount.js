@@ -42,7 +42,6 @@ export default withTooltip(
 		to,
 		displayedOrgs,
 		onDisplayedOrgsChange,
-		formatBinTime,
 		showTooltip,
 		hideTooltip,
 		tooltipData,
@@ -199,7 +198,6 @@ export default withTooltip(
 								<AxisBottom
 									scale={xTimeScale}
 									top={yMax}
-									numTicks={xMax > 520 ? 8 : 5}
 									tickFormat={customTimeAxisFormat} />
 								<AxisLeft
 									scale={yScale}
