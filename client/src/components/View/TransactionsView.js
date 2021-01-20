@@ -281,7 +281,10 @@ function TransactionsView({
 				.find(bin => bin.timestamp === trxBinTimeStamp)
 				[transaction.creator_msp_id].push(transaction);
 		});
+
 		setBinnedTrx(bins);
+		setSelectedFrom(bins.length > 0 ? moment(bins[0].timestamp) : start);
+		setSelectedTo(bins.length > 0 ? moment(bins[bins.length-1].timestamp + msPerBin) : end);
 		setSelectedBins(bins);
 	}, [transactions, msPerBin, start, end, organisations]);
 
@@ -357,10 +360,12 @@ function TransactionsView({
 			setSelectedSizeBins(sizeBins);
 			setSelectedTrx(transactions);
 			setSelectedMtrx(metrics);
-			setSelectedFrom(start);
+			setSelectedFrom(binnedTrx.length > 0 ? moment(binnedTrx[0].timestamp) : start);
+			setSelectedTo(binnedTrx.length > 0 ? moment(binnedTrx[binnedTrx.length-1].timestamp) : end);
 			setSelectedTo(end);
 			return;
 		}
+
 		metrics.forEach(bin => {
 			if (
 				selectedBinTimestamps.indexOf(
@@ -529,6 +534,7 @@ function TransactionsView({
 												width={width}
 												height={height}
 												data={binnedTrx}
+												msPerBin={msPerBin}
 												onBrushSelectionChange={handleBrushSelection}
 												selectedTrxBins={selectedBins}
 												formatBinTime={binTimeFormat}
@@ -546,10 +552,13 @@ function TransactionsView({
 												height={height}
 												colorScale={orgsColorScale}
 												data={selectedBins}
+												from={selectedFrom}
+												to={selectedTo}
 												msPerBin={msPerBin}
 												displayedOrgs={displayedOrgs}
 												onDisplayedOrgsChange={handleDisplayedOrgsChanged}
 												formatBinTime={binTimeFormat}
+												customTimeAxisFormat={customTimeAxisFormat}
 											/>
 										)}
 									</ParentSize>

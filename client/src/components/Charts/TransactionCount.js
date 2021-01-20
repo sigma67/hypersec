@@ -3,7 +3,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
-import { scaleLinear, scaleBand } from '@visx/scale';
+import { scaleLinear, scaleBand, scaleTime } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
 import {Bar, BarStack, Line} from '@visx/shape';
 import { Group } from '@visx/group';
@@ -26,7 +26,7 @@ const useStyles = makeStyles(theme => ({
 	}
 }));
 
-const defaultMargin = { top: 10, bottom: 40, left: 50, right: 0 };
+const defaultMargin = { top: 10, bottom: 40, left: 50, right: 20 };
 
 const getDate = d => d.timestamp;
 
@@ -38,6 +38,8 @@ export default withTooltip(
 		colorScale,
 		msPerBin,
 		data,
+		from,
+		to,
 		displayedOrgs,
 		onDisplayedOrgsChange,
 		formatBinTime,
@@ -45,7 +47,8 @@ export default withTooltip(
 		hideTooltip,
 		tooltipData,
 		tooltipTop = 0,
-		tooltipLeft = 0
+		tooltipLeft = 0,
+		customTimeAxisFormat
 	}) => {
 		const legendGlyphSize = 15;
 		const classes = useStyles();
@@ -64,15 +67,24 @@ export default withTooltip(
 			setMaxTrxCount(maxValue);
 		}, [data]);
 
-		const xScale = useMemo(
+		const xBandScale = useMemo(
 			() =>
 				scaleBand({
 					range: [0, xMax],
 					domain: data.map(d => getDate(d)),
-					padding: 0.1
+					// padding: 0.1
 				}),
 			[xMax, data]
 		);
+
+		const xTimeScale = useMemo(
+			() =>
+				scaleTime({
+					range: [0, xMax],
+					domain: [from, to]
+				}),
+			[xMax, from, to]
+		)
 
 		const yScale = useMemo(
 			() =>
@@ -99,9 +111,9 @@ export default withTooltip(
 					x: 0,
 					y: 0
 				};
-				const tempIndex = Math.floor((point.x - margin.left - margin.right) / xScale.step());
-				const index = Math.max(0, Math.min(tempIndex, xScale.domain().length-1));
-				const binTimestamp = xScale.domain()[index];
+				const tempIndex = Math.floor((point.x - margin.left) / xBandScale.step());
+				const index = Math.max(0, Math.min(tempIndex, xBandScale.domain().length-1));
+				const binTimestamp = xBandScale.domain()[index];
 				const bin = data.filter(d => d.timestamp === binTimestamp)[0];
 
 				setHoveredBarStack({
@@ -116,10 +128,10 @@ export default withTooltip(
 
 				showTooltip({
 					tooltipData: {time: binTimestamp, orgCounts: orgCounts},
-					tooltipLeft: xScale(binTimestamp) + xScale.bandwidth() / 2
+					tooltipLeft: xBandScale(binTimestamp) + xBandScale.bandwidth() / 2
 				})
 
-			}, [showTooltip, setHoveredBarStack, data, displayedOrgs, margin.left, margin.right, xScale, yScale]
+			}, [showTooltip, setHoveredBarStack, data, displayedOrgs, margin.left, margin.right, xBandScale, yScale]
 		);
 
 		return (
@@ -151,7 +163,7 @@ export default withTooltip(
 										keys={displayedOrgs}
 										value={(d, k) => d[k].length}
 										x={getDate}
-										xScale={xScale}
+										xScale={xBandScale}
 										yScale={yScale}
 										color={(d) => colorScale(d)} >
 										{barStacks =>
@@ -185,10 +197,10 @@ export default withTooltip(
 									onMouseMove={handleTooltip}
 									onMouseLeave={() => { hideTooltip(); setHoveredBarStack(); } }/>
 								<AxisBottom
-									scale={xScale}
+									scale={xTimeScale}
 									top={yMax}
-									tickFormat={formatBinTime}
-									numTicks={5} />
+									numTicks={xMax > 520 ? 8 : 5}
+									tickFormat={customTimeAxisFormat} />
 								<AxisLeft
 									scale={yScale}
 									numTicks={4} />

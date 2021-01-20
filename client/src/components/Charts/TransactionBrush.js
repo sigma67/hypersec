@@ -23,7 +23,8 @@ function TransactionBrush({
 	data,
 	onBrushSelectionChange,
 	selectedTrxBins,
-	formatBinTime
+	formatBinTime,
+	msPerBin
 }) {
 	const xMax = width - margin.left - margin.right;
 	const yMax = height - margin.top - margin.bottom;
@@ -79,7 +80,7 @@ function TransactionBrush({
 
 	const getTimeRangeString = () => {
 		if (selectedTrxBins.length < 1) return '';
-		return `${moment(selectedTrxBins[0].timestamp).format('DD.MM., kk:mm')} - ${moment(selectedTrxBins[selectedTrxBins.length-1].timestamp).format('DD.MM., kk:mm')}`
+		return `${moment(selectedTrxBins[0].timestamp).format('DD.MM., kk:mm')} - ${moment(selectedTrxBins[selectedTrxBins.length-1].timestamp + msPerBin).format('DD.MM., kk:mm')}`
 	};
 
 	return (

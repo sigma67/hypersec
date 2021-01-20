@@ -146,7 +146,7 @@ export default withTooltip(
 													fill={colorScale(org)}
 													opacity={getOpacity(bin.timestamp, org)}
 													// r={bin[org].count < 15 ? bin[org].count : 15}
-													r = {5}
+													r = {3}
 													onMouseMove={event => {
 														const point = localPoint(event) || { x: 0, y: 0 };
 														setHoveredCircle({timestamp: bin.timestamp, org: org});
