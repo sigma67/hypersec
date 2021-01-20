@@ -124,7 +124,6 @@ export default withTooltip(
 									numTicks={yMax > 520 ? 8 : 5}
 								/>
 								{tooltipData && (
-									<Group>
 										<Line
 											from={{ x: xScale(tooltipData.time), y: yScale(tooltipData.size / tooltipData.count) }}
 											to={{ x: xScale(tooltipData.time), y: yMax }}
@@ -133,7 +132,6 @@ export default withTooltip(
 											pointerEvents="none"
 											strokeDasharray="5,2"
 										/>
-									</Group>
 								)}
 								{
 									data.map((bin) =>

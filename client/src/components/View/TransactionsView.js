@@ -256,10 +256,11 @@ function TransactionsView({
 		}
 	}, [organisations]);
 
-	const bins = useMemo(() => {
+
+	const binTrx = useCallback(() => {
 		let currentBinTime = Math.floor(start.valueOf() / msPerBin) * msPerBin;
 		let bins = [];
-		while (currentBinTime < end) {
+		while (currentBinTime <= end) {
 			const bin = { timestamp: currentBinTime, total: [] };
 			organisations.forEach(org => {
 				bin[org] = [];
@@ -267,10 +268,7 @@ function TransactionsView({
 			bins.push(bin);
 			currentBinTime += msPerBin;
 		}
-		return bins;
-	}, [transactions, msPerBin, start, end, organisations]);
 
-	const binTrx = useCallback(() => {
 		const startBin = Math.floor(start.valueOf() / msPerBin) * msPerBin;
 		const endBin = Math.floor(end.valueOf() / msPerBin) * msPerBin;
 		transactions.forEach(transaction => {
