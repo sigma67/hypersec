@@ -1,7 +1,23 @@
-
 # HyperSec
 
-HyperSec is a research project to provide Visual Analytics for blockchain security monitoring. A publication is currently being prepared and will be linked here once it is available.
+HyperSec is a research project to provide Visual Analytics for blockchain security monitoring.
+A publication is currently being prepared and will be linked here once it is available. A demo of the prototype is available at https://pcrw00123.ur.de:8080/.
+
+![](client/src/static/images/logo_small.png)
+
+## Summary
+The prototype in this repository is based on [Hyperledger Explorer](https://github.com/hyperledger/blockchain-explorer).
+It is intended for security monitoring and includes several visualizations to facilitate this.
+
+Key technical improvements compared to Hyperledger Explorer include:
+
+- **Dashboard**: Fabric JIRA issues are shown on the dashboard
+- **Network**: The network structure (peers, orderers) is visualized in the network view. Docker Logs can be inspected from the frontend
+- **Blocks**: Blocks display is more compact, transaction detail inspection was moved to the block modal
+- **Transactions**: Prometheus Operations Service Metrics are displayed in interactive charts. Transaction display is enhanced with user and size information
+- **Chaincodes**: Security scan results can be inserted in the database and viewed in the frontend (use [revive-cc](https://github.com/sigma67/revive-cc) for scans)
+
+
 
 # Setup
 
