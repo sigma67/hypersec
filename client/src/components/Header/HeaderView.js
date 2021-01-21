@@ -83,10 +83,8 @@ const styles = theme => {
 	};
 	return {
 		logo: {
-			width: 260,
 			height: 50,
 			'@media (max-width: 1415px) and (min-width: 990px)': {
-				width: 200,
 				height: 40
 			}
 		},
