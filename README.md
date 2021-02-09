@@ -1,7 +1,7 @@
 # HyperSec
 
 HyperSec is a research project to provide Visual Analytics for blockchain security monitoring.
-A publication is currently being prepared and will be linked here once it is available. A demo of the prototype is available at https://pcrw00123.ur.de:8080/ (user: exploreradmin, pass: exploreradminpw).
+A publication is currently being prepared and will be linked here once it is available. A demo of the prototype is available at http://pcrw00123.ur.de:8080/ (user: exploreradmin, pass: exploreradminpw).
 
 ![](client/src/static/images/logo_small.png)
 
