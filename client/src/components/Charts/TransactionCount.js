@@ -240,7 +240,7 @@ export default withTooltip(
 									}}
 								>
 									<strong>
-										{`${moment(tooltipData.time).format('DD.MM., kk:mm')} - ${moment(tooltipData.time + msPerBin).format('kk:mm')}`}
+										{`${moment(tooltipData.time).format('DD.MM., kk:mm')} - ${moment(tooltipData.time + msPerBin).format('DD.MM., kk:mm')}`}
 									</strong>
 								</Tooltip>
 							</div>

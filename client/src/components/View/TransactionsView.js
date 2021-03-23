@@ -204,7 +204,6 @@ function TransactionsView({
 		if (end.valueOf() - start.valueOf() > 10800000 && msPerBin < 3600000) setMsPerBin(3600000); //if msPerBin = 1min and range > 3h set msPerBin = 1h
 		if (end.valueOf() - start.valueOf() > 604800000 && msPerBin < 43200000) setMsPerBin(43200000); //if msPerBin = 1h and range > 7d set msPerBin = 12h
 		setMsPerSizeBin(Math.floor((end.valueOf() - start.valueOf()) / 120)); //max 120 container for size
-
 	}, [start, end]);
 
 	useEffect(() => {

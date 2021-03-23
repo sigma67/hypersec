@@ -136,8 +136,8 @@ export default withTooltip(
 								{
 									data.map((bin) =>
 										displayedOrgs.map(org => {
-											if (!bin[org]) return <div/>;
-											if (bin[org].count < 1) return <div/>;
+											if (!bin[org]) return <div key={`${bin.timestamp}-${org}`} />;
+											if (bin[org].count < 1) return <div key={`${bin.timestamp}-${org}`} />;
 											return (
 												<Circle
 													key={`point-${bin.timestamp}-${org}`}
@@ -199,7 +199,7 @@ export default withTooltip(
 									}}
 								>
 									<strong>
-										{`${moment(tooltipData.time).format('DD.MM., kk:mm')} - ${moment(tooltipData.time + msPerBin).format('kk:mm')}`}
+										{`${moment(tooltipData.time).format('DD.MM., kk:mm')} - ${moment(tooltipData.time + msPerBin).format('DD.MM., kk:mm')}`}
 									</strong>
 								</Tooltip>
 							</div>

@@ -466,7 +466,7 @@ async function runForceGraph(
 			tooltipLeft: x,
 			tooltipTop: y
 		})
-	}
+	};
 
 	const mouseLeave = () => {
 		d3.selectAll('.peerNode')
