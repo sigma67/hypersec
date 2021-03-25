@@ -25,13 +25,25 @@ function TransactionBrush({
 	end,
 	onBrushSelectionChange,
 	selectedTrxBins,
-	formatBinTime
+	formatBinTime,
+	msPerBin
 }) {
 	const xMax = width - margin.left - margin.right;
 	const yMax = height - margin.top - margin.bottom;
 
 	const [maxTrxCount, setMaxTrxCount] = useState(0);
 	const [total, setTotal] = useState([]);
+	const [timeDomain, setTimeDomain] = useState([]);
+
+	useEffect(() => {
+		const domain = [];
+		const dataEntries = data.values();
+		for (let entry of dataEntries) {
+			if (entry.hasOwnProperty('timestamp'))	domain.push(entry.timestamp);
+		}
+		setTimeDomain(domain);
+	}, [data]);
+
 	useEffect(() => {
 		if (document.querySelector(".visx-brush-selection")) { //this a work-around to remove the brush-selection overlay after the displayed data changes
 			const brushSelection = document.querySelector(".visx-brush-selection");
@@ -42,14 +54,15 @@ function TransactionBrush({
 		}
 		let maxValue = 0;
 		const tempTotal = [];
-		if (data.length < 1) return;
-		data.forEach(bin => {
+		if (data.size < 1) return;
+		const dataEntries = data.values();
+		for (let entry of dataEntries) {
 			tempTotal.push({
-				timestamp: bin.timestamp,
-				transactions: [...bin.total]
+				timestamp: entry.timestamp,
+				transactions: [...entry.total]
 			});
-			maxValue = bin.total.length > maxValue ? bin.total.length : maxValue;
-		});
+			maxValue = entry.total.length > maxValue ? entry.total.length : maxValue;
+		}
 		setTotal(tempTotal);
 		setMaxTrxCount(maxValue + maxValue * 0.01);
 	}, [data]);
@@ -58,10 +71,10 @@ function TransactionBrush({
 		() =>
 			scaleBand({
 				range: [0, xMax],
-				domain: data.map(d => d.timestamp),
+				domain: timeDomain,
 				padding: 0.025
 			}),
-		[xMax, data]
+		[xMax, timeDomain]
 	);
 
 	const yScale = useMemo(
@@ -107,8 +120,7 @@ function TransactionBrush({
 								const barWidth = xScale.bandwidth();
 								const barHeight = yMax - barY < 0 ? 0 : yMax - barY;
 								const color =
-									selectedTrxBins.filter(bin => bin.timestamp === d.timestamp)
-										.length > 0
+									selectedTrxBins.get(Math.floor(d.timestamp / msPerBin) )
 										? 'rgba(88, 197, 194, .5)'
 										: 'rgba(88, 197, 194, .1)';
 								return (

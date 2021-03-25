@@ -85,7 +85,6 @@ export default withTooltip(
 			[yMax, yMaxValue]
 		);
 
-
 		const getOpacity = (timestamp, org) => {
 			if (hoveredCircle) {
 				return (hoveredCircle.timestamp === timestamp && hoveredCircle.org === org) ? 1 : 0.7;

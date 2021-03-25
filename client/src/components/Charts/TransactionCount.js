@@ -56,13 +56,29 @@ export default withTooltip(
 		const yMax = height - margin.top - margin.bottom;
 
 		const [maxTrxCount, setMaxTrxCount] = useState(0);
+		const [timeDomain, setTimeDomain] = useState([]);
+		const [dataArray, setDataArray] = useState([]);
+
+		useEffect(() => {
+			const timeDomain = [];
+			const dataArray = [];
+			const dataEntries = data.values();
+			for (let entry of dataEntries) {
+				if (entry.hasOwnProperty('timestamp'))	timeDomain.push(entry.timestamp);
+				dataArray.push(entry);
+			}
+			setTimeDomain(timeDomain);
+			setDataArray(dataArray);
+		}, [data]);
+
 
 		useEffect(() => {
 			let maxValue = 0;
-			if (data.length < 1) return;
-			data.forEach((bin, index) => {
-				maxValue = bin.total.length > maxValue ? bin.total.length : maxValue;
-			});
+			if (data.size < 1) return;
+			const dataEntries = data.values();
+			for (let entry of dataEntries) {
+				maxValue = entry.total.length > maxValue ? entry.total.length : maxValue;
+			}
 			setMaxTrxCount(maxValue);
 		}, [data]);
 
@@ -70,10 +86,10 @@ export default withTooltip(
 			() =>
 				scaleBand({
 					range: [0, xMax],
-					domain: data.map(d => getDate(d)),
+					domain: timeDomain,
 					// padding: 0.1
 				}),
-			[xMax, data]
+			[xMax, timeDomain]
 		);
 
 		const xTimeScale = useMemo(
@@ -113,7 +129,7 @@ export default withTooltip(
 				const tempIndex = Math.floor((point.x - margin.left) / xBandScale.step());
 				const index = Math.max(0, Math.min(tempIndex, xBandScale.domain().length-1));
 				const binTimestamp = xBandScale.domain()[index];
-				const bin = data.filter(d => d.timestamp === binTimestamp)[0];
+				const bin = data.get(Math.floor(binTimestamp / msPerBin));
 
 				setHoveredBarStack({
 					index: index,
@@ -130,7 +146,7 @@ export default withTooltip(
 					tooltipLeft: xBandScale(binTimestamp) + xBandScale.bandwidth() / 2
 				})
 
-			}, [showTooltip, setHoveredBarStack, data, displayedOrgs, margin.left, margin.right, xBandScale, yScale]
+			}, [showTooltip, setHoveredBarStack, data, displayedOrgs, margin.left, xBandScale, msPerBin]
 		);
 
 		return (
@@ -158,9 +174,9 @@ export default withTooltip(
 										pointerEvents="none"
 										numTicks={8} />
 									<BarStack
-										data={data}
+										data={dataArray}
 										keys={displayedOrgs}
-										value={(d, k) => d[k].length}
+										value={(d, k) => { return d[k] ? d[k].length : 0}}
 										x={getDate}
 										xScale={xBandScale}
 										yScale={yScale}
