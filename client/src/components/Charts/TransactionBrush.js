@@ -59,9 +59,9 @@ function TransactionBrush({
 		for (let entry of dataEntries) {
 			tempTotal.push({
 				timestamp: entry.timestamp,
-				transactions: [...entry.total]
+				transactions: [...entry.total.tx]
 			});
-			maxValue = entry.total.length > maxValue ? entry.total.length : maxValue;
+			maxValue = entry.total.tx.length > maxValue ? entry.total.tx.length : maxValue;
 		}
 		setTotal(tempTotal);
 		setMaxTrxCount(maxValue + maxValue * 0.01);

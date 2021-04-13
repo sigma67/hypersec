@@ -141,12 +141,9 @@ function TransactionsView({
 	const [organisations, setOrganisations] = useState([]);
 	const [displayedOrgs, setDisplayedOrgs] = useState([]);
 	const [msPerBin, setMsPerBin] = useState(3600000);
-	const [msPerSizeBin, setMsPerSizeBin] = useState(0);
 	const [avgTrxSize, setAvgTrxSize] = useState(0);
 	const [err, setErr] = useState(false);
 	const [selectedBins, setSelectedBins] = useState(new Map());
-	const [sizeBins, setSizeBins] = useState([]);
-	const [selectedSizeBins, setSelectedSizeBins] = useState([]);
 	const [selectedTrx, setSelectedTrx] = useState([]);
 	const [selectedMtrx, setSelectedMtrx] = useState([]);
 	const [selectedFrom, setSelectedFrom] = useState(start);
@@ -199,20 +196,29 @@ function TransactionsView({
 		const bins = new Map();
 		let binStartTime = DateTime.fromMillis(start.valueOf());
 		for (let i = Math.floor(start.valueOf() / msPerBin); i <= Math.floor(end.valueOf() / msPerBin); i++) {
-			const bin = { timestamp: binStartTime.toMillis(), total: [] };
+			const binTotal = {size: 0, tx: []}
+			const bin = {
+				timestamp: binStartTime.toMillis(),
+				total: binTotal,
+			};
 			organisations.forEach(org => {
-				bin[org] = [];
+				bin[org] = {size: 0, tx: []};
 			});
 			bins.set(i, bin)
 			binStartTime = binStartTime.plus(msPerBin);
 		}
 
+
+
 		transactions.forEach(tx => {
 			const txBinTimestamp = DateTime.fromISO((tx.createdt));
 			const txBinHash = Math.floor(txBinTimestamp.toMillis() / msPerBin);
+			if (!bins.get((txBinHash))) return;
 			const bin = bins.get(txBinHash);
-			bin['total'].push(tx);
-			bin[tx.creator_msp_id].push(tx);
+			bin.total.size += tx.size;
+			bin.total.tx.push(tx);
+			bin[tx.creator_msp_id].size += tx.size;
+			bin[tx.creator_msp_id].tx.push(tx);
 			bins.set(txBinHash, bin);
 		});
 
@@ -222,59 +228,6 @@ function TransactionsView({
 		setSelectedTo(end);
 	}, [transactions, msPerBin, start, end, organisations]);
 
-	const buildSizeBins = useCallback(() => {
-		if (msPerSizeBin < 500) return;
-
-		let testBinTime = start.valueOf();
-		let testBins = {};
-		while (testBinTime < end.valueOf()) {
-			const bin = { totalSize: 0, totalCount: 0 };
-			organisations.forEach(org => bin[org] = { size: 0, count: 0});
-			testBins[testBinTime] = bin;
-			testBinTime += msPerSizeBin
-		}
-
-		let currentBinTime = start.valueOf();
-		let bins = [];
-		while (currentBinTime < end.valueOf()) {
-			const bin = { timestamp: currentBinTime, totalSize: 0, totalCount: 0 };
-			organisations.forEach(org => {
-				bin[org] = { size: 0, count: 0};
-			});
-			bins.push(bin);
-			currentBinTime += msPerSizeBin;
-		}
-
-		transactions.forEach(tx => {
-			const txBinTimestamp = moment(tx.createdt);
-			for (let i = start.valueOf(); i < end.valueOf(); i += msPerSizeBin) {
-				if (!testBins[i+msPerSizeBin] || (txBinTimestamp >= i && txBinTimestamp < i+msPerSizeBin)) {
-					testBins[i].totalSize += tx.size;
-					testBins[i].totalCount ++;
-					testBins[i][tx.creator_msp_id].size += tx.size;
-					testBins[i][tx.creator_msp_id].count ++;
-					break;
-				}
-			}
-		});
-
-		transactions.forEach(tx => {
-			const txBinTimestamp = moment(tx.createdt);
-			for (let i = 0; i < bins.length; i++) {
-				if (!bins[i+1] || (txBinTimestamp >= bins[i].timestamp && txBinTimestamp < bins[i+1].timestamp)) {
-					bins[i].totalSize += tx.size;
-					bins[i].totalCount ++;
-					bins[i][tx.creator_msp_id].size += tx.size;
-					bins[i][tx.creator_msp_id].count ++;
-					break;
-				}
-			}
-		});
-
-		setSizeBins(bins);
-		setSelectedSizeBins(bins);
-	}, [transactions, msPerSizeBin, start, end, organisations]);
-
 	useEffect(() => {
 		async function fetchData() {
 			await handleSearch();
@@ -282,7 +235,6 @@ function TransactionsView({
 		fetchData();
 		if (end.valueOf() - start.valueOf() > 10800000 && msPerBin < 3600000) setMsPerBin(3600000); //if msPerBin = 1min and range > 3h set msPerBin = 1h
 		if (end.valueOf() - start.valueOf() > 604800000 && msPerBin < 43200000) setMsPerBin(43200000); //if msPerBin = 1h and range > 7d set msPerBin = 12h
-		setMsPerSizeBin(Math.floor((end.valueOf() - start.valueOf()) / 120)); //max 120 container for size
 	}, [start, end, handleSearch, msPerBin]);
 
 	useEffect(() => {
@@ -319,8 +271,7 @@ function TransactionsView({
 		};
 		getAvgTransactionSize();
 		binTrx();
-		buildSizeBins();
-	}, [transactions, msPerBin, binTrx, buildSizeBins]);
+	}, [transactions, msPerBin, binTrx]);
 
 	useEffect(() => {
 		if (displayedOrgs.length === 0) {
@@ -340,7 +291,6 @@ function TransactionsView({
 		const mtrxSelection = [];
 		if (selectedBinTimestamps.length < 1) {
 			setSelectedBins(binnedTrx);
-			setSelectedSizeBins(sizeBins);
 			setSelectedTrx(transactions);
 			setSelectedMtrx(metrics);
 			setSelectedFrom(start);
@@ -355,7 +305,7 @@ function TransactionsView({
 
 		for (let entry of binnedTrx.values()) {
 			if (selectedBinTimestamps.indexOf(entry.timestamp) > -1) {
-				trxSelection.push(...entry.total);
+				trxSelection.push(...entry.total.tx);
 			}
 		}
 
@@ -367,10 +317,6 @@ function TransactionsView({
 		}
 		setSelectedBins(tempMap);
 
-		setSelectedSizeBins(
-			sizeBins.filter(bin => bin.timestamp > selectedBinTimestamps[0] && bin.timestamp < selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin)
-		);
-
 		setSelectedTrx(trxSelection);
 		setSelectedMtrx(mtrxSelection);
 		setSelectedFrom(selectedBinTimestamps[0]);
@@ -379,7 +325,7 @@ function TransactionsView({
 				? selectedBinTimestamps[selectedBinTimestamps.length - 1] + msPerBin
 				: selectedBinTimestamps[selectedBinTimestamps.length - 2] + msPerBin
 		);
-	}, [binnedTrx, end, metrics, msPerBin, sizeBins, start, transactions]);
+	}, [binnedTrx, end, metrics, msPerBin, start, transactions]);
 
 	const handleSearch = useCallback( async () => {
 		const searchTransactionList = async channel => {
@@ -535,8 +481,8 @@ function TransactionsView({
 												width={width}
 												height={height}
 												data={binnedTrx}
-												start={start}
-												end={end}
+												start={selectedFrom}
+												end={selectedTo}
 												onBrushSelectionChange={handleBrushSelection}
 												selectedTrxBins={selectedBins}
 												formatBinTime={binTimeFormat}
@@ -572,10 +518,10 @@ function TransactionsView({
 												width={width}
 												height={height}
 												colorScale={orgsColorScale}
-												data={selectedSizeBins}
+												data={selectedBins}
 												from={selectedFrom}
 												to={selectedTo}
-												msPerBin={msPerSizeBin}
+												msPerBin={msPerBin}
 												avgTrxSize={avgTrxSize || 1}
 												displayedOrgs={displayedOrgs}
 												onDisplayedOrgsChange={handleDisplayedOrgsChanged}

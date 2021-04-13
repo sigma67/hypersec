@@ -1,4 +1,4 @@
-import React, { useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
@@ -10,7 +10,6 @@ import { Group } from '@visx/group';
 import { LegendOrdinal, LegendItem, LegendLabel } from '@visx/legend';
 import { GridRows, GridColumns } from '@visx/grid';
 import {defaultStyles, Tooltip, TooltipWithBounds, withTooltip} from '@visx/tooltip';
-import { max } from 'd3';
 import moment from 'moment';
 import { localPoint } from '@visx/event';
 
@@ -57,14 +56,19 @@ export default withTooltip(
 		const xMax = width - margin.left - margin.right;
 		const yMax = height - margin.top - margin.bottom;
 		const [hoveredCircle, setHoveredCircle] = useState();
+		const [dataArray, setDataArray] = useState([]);
+		const [yMaxValue, setYMaxValue] = useState(0);
 
-		const yMaxValue = useMemo(() => {
-			return data
-				? max(data, d => d.totalSize / d.totalCount) >= avgTrxSize
-					? max(data, d => d.totalSize / d.totalCount)
-					: avgTrxSize
-				: avgTrxSize;
-		}, [data, avgTrxSize]);
+		useEffect(() => {
+			let maxValue = avgTrxSize;
+			const dataArray = [];
+			for (let entry of data.values()) {
+				dataArray.push(entry);
+				maxValue = (entry.total.size / entry.total.tx.length) > maxValue ?	(entry.total.size / entry.total.tx.length) :	maxValue;
+			}
+			setYMaxValue(maxValue);
+			setDataArray(dataArray);
+		}, [data, avgTrxSize])
 
 		const xScale = useMemo(
 			() =>
@@ -98,7 +102,7 @@ export default withTooltip(
 				<Grid container>
 					<Grid item xs={12}>
 						<Typography component="div">
-							<Box m={1}>Transaction Size [b]</Box>
+							<Box m={1}>Average Transaction Size [b]</Box>
 						</Typography>
 					</Grid>
 					<Grid item xs={12}>
@@ -133,19 +137,17 @@ export default withTooltip(
 										/>
 								)}
 								{
-									data.map((bin) =>
+									dataArray.map((bin) =>
 										displayedOrgs.map(org => {
-											if (!bin[org]) return <div key={`${bin.timestamp}-${org}`} />;
-											if (bin[org].count < 1) return <div key={`${bin.timestamp}-${org}`} />;
+											if (!bin[org] || (bin[org].tx.length < 1)) return <div key={`${bin.timestamp}-${org}`} />;
 											return (
 												<Circle
 													key={`point-${bin.timestamp}-${org}`}
 													cx={xScale(bin.timestamp)}
-													cy={yScale(bin[org].size / bin[org].count)}
+													cy={yScale(bin[org].size / bin[org].tx.length)}
 													fill={colorScale(org)}
 													opacity={getOpacity(bin.timestamp, org)}
-													// r={bin[org].count < 15 ? bin[org].count : 15}
-													r = {3}
+													r = {5}
 													onMouseMove={event => {
 														const point = localPoint(event) || { x: 0, y: 0 };
 														setHoveredCircle({timestamp: bin.timestamp, org: org});
@@ -154,7 +156,7 @@ export default withTooltip(
 																time: bin.timestamp,
 																org: org,
 																size: bin[org].size,
-																count: bin[org].count
+																count: bin[org].tx.length
 															},
 															tooltipLeft: point.x,
 															tooltipTop: point.y

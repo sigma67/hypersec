@@ -60,25 +60,16 @@ export default withTooltip(
 		const [dataArray, setDataArray] = useState([]);
 
 		useEffect(() => {
+			let maxValue = 0;
 			const timeDomain = [];
 			const dataArray = [];
-			const dataEntries = data.values();
-			for (let entry of dataEntries) {
+			for (let entry of data.values()) {
 				if (entry.hasOwnProperty('timestamp'))	timeDomain.push(entry.timestamp);
+				maxValue = entry.total.tx.length > maxValue ? entry.total.tx.length : maxValue;
 				dataArray.push(entry);
 			}
 			setTimeDomain(timeDomain);
 			setDataArray(dataArray);
-		}, [data]);
-
-
-		useEffect(() => {
-			let maxValue = 0;
-			if (data.size < 1) return;
-			const dataEntries = data.values();
-			for (let entry of dataEntries) {
-				maxValue = entry.total.length > maxValue ? entry.total.length : maxValue;
-			}
 			setMaxTrxCount(maxValue);
 		}, [data]);
 
@@ -138,7 +129,7 @@ export default withTooltip(
 				const orgCounts = [];
 				displayedOrgs.forEach(org => {
 					if (org === 'total') return;
-					orgCounts.push({key: org, value: bin[org].length});
+					orgCounts.push({key: org, value: bin[org].tx.length});
 				});
 
 				showTooltip({
@@ -176,7 +167,7 @@ export default withTooltip(
 									<BarStack
 										data={dataArray}
 										keys={displayedOrgs}
-										value={(d, k) => { return d[k] ? d[k].length : 0}}
+										value={(d, k) => { return d[k] ? d[k].tx.length : 0}}
 										x={getDate}
 										xScale={xBandScale}
 										yScale={yScale}
