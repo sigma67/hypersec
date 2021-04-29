@@ -15,7 +15,7 @@ const PROMETHEUS_API_URL = 'http://localhost:9090/api/v1/';
  * @param {*} router
  * @param {*} platform
  */
-const metricroutes = async function(router, platform) {
+export async function metricroutes(router, platform) {
 	/**
 	 * Prometheus Metrics
 	 * GET /metrics
@@ -161,5 +161,3 @@ const metricroutes = async function(router, platform) {
 		}
 	})
 }
-
-module.exports = metricroutes;

@@ -27,7 +27,7 @@ first-network/channel-artifacts/*
 tmp/wallet/*
 wallet/*
 *.swp
-package-lock.json
+# package-lock.json
 ssl-certs/*.pem
 ssl-certs/*.csr
 0
@@ -44,3 +44,5 @@ crypto-config
 **/specs/ytt/
 PTE
 .editorconfig
+dist/*
+app/persistence/fabric/postgreSQL/db/logfile

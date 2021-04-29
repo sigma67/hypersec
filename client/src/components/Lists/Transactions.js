@@ -139,7 +139,14 @@ function Transactions({
 	];
 	const handleDialogOpen = async tid => {
 		await getTransaction(currentChannel, tid);
-		setDialogOpen(true);
+		this.setState({ dialogOpen: true });
+		if (this.props.transactionId) {
+			this.setState({ directLinkDialogDoneFlag: true });
+		}
+	};
+
+	const handleMultiSelect = value => {
+		this.setState({ orgs: value });
 	};
 
 	const handleDialogClose = () => {

@@ -12,6 +12,7 @@ import Dialog from "@material-ui/core/Dialog";
 /* istanbul ignore next */
 const Peers = ({peerList, getLogs, logs}) => {
 	const [dialogOpen, setDialogOpen] = useState(false);
+	console.log(peerList)
 	const columnHeaders = [
 		{
 			Header: 'Peer Name',
@@ -103,8 +104,7 @@ const Peers = ({peerList, getLogs, logs}) => {
 				},
 				{
 					Header: 'Unsigned',
-					id: 'ledger_height_unsigned',
-					accessor: d => d.ledger_height_unsigned.toString(),
+					accessor: 'ledger_height_unsigned',
 					filterMethod: (filter, rows) =>
 						matchSorter(
 							rows,

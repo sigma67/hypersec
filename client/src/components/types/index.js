@@ -114,6 +114,7 @@ export const getTransactionPerHourType = func;
 export const getTransactionPerMinType = func;
 export const getMetricsType = func;
 export const getIssuesType = func;
+export const getUserListType = func;
 
 export const notificationsType = arrayOf(
 	shape({
@@ -189,6 +190,17 @@ export const transactionPerMinType = arrayOf(
 	shape({
 		count: string,
 		datetime: string
+	})
+);
+
+export const userListType = arrayOf(
+	shape({
+		username: string,
+		email: string,
+		networkName: string,
+		firstName: string,
+		lastName: string,
+		roles: string
 	})
 );
 

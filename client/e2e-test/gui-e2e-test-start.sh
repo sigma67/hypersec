@@ -8,10 +8,10 @@ TIMEOUT=600
 DELAY=10
 
 ROOTDIR="$(cd "$(dirname "$0")"/../.. && pwd)"
-FABRIC_V1_VERSION=1.4.8
-FABRIC_CA_V1_VERSION=1.4.7
-FABRIC_V2_VERSION=2.2.0
-FABRIC_CA_V2_VERSION=1.4.7
+FABRIC_V1_VERSION=1.4.11
+FABRIC_CA_V1_VERSION=1.4.9
+FABRIC_V2_VERSION=2.3.1
+FABRIC_CA_V2_VERSION=1.4.9
 
 echo "#### Downloaded fabric-test repo"
 
@@ -89,9 +89,7 @@ docker tag hyperledger/fabric-ca:${PULL_CA_IMAGE_VERSION} hyperledger/fabric-ca:
 # Start selenium standalone server
 #
 pushd $ROOTDIR/client/e2e-test
-docker-compose down -v
 docker-compose -f docker-compose-explorer.yaml down -v
-docker-compose up -d
 docker-compose -f docker-compose-explorer.yaml up -d explorerdb.mynetwork.com
 echo "#### Starting selenium containers & explorer-db container ..."
 
@@ -109,7 +107,9 @@ done
 echo "#### Started explorer-db container"
 popd
 
-pushd $ROOTDIR/client
-echo "#### Starting WebDriverI/O based test suite"
-npx wdio ./e2e-test/wdio.conf.js
+pushd $ROOTDIR/client/e2e-test
+echo "#### Starting Fabric Network"
+npm install
+node startnetwork.js
+npx mocha
 popd

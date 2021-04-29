@@ -4,7 +4,6 @@
 /* eslint-disable */
 
 import React, { Component } from 'react';
-import compose from 'recompose/compose';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
 import { withStyles } from '@material-ui/core/styles';
@@ -24,10 +23,9 @@ import AdminPanel from '../Panels/AdminPanel';
 import { chartOperations, chartSelectors } from '../../state/redux/charts';
 import { tableOperations, tableSelectors } from '../../state/redux/tables';
 import { themeSelectors } from '../../state/redux/theme';
-
+import UsersPanal from '../UsersPanal/UsersPanal';
 import { authOperations } from '../../state/redux/auth';
 
-import Register from '../Register';
 import config from '../../../package.json'
 
 // import Enroll from '../Enroll';
@@ -73,7 +71,6 @@ const {
 
 const { currentChannelSelector } = chartSelectors;
 const { channelsSelector } = tableSelectors;
-
 /* istanbul ignore next */
 const styles = theme => {
 	const { type } = theme.palette;
@@ -119,31 +116,32 @@ const styles = theme => {
 			}
 		},
 		adminButton: {
-			paddingTop: 0,
+			paddingTop: '4px',
 			marginTop: 0
 		},
 		themeSwitch: {
-			height: 50,
-			lineHeight: '50px',
+			// height: 50,
+			// lineHeight: '50px',
 			textAlign: 'center',
-			marginLeft: 15,
-			width: 100,
-			paddingTop: 0,
-			'@media (max-width: 1415px) and (min-width: 990px)': {
-				display: 'flex'
-			},
-			'@media (max-width: 990px)': {
-				marginLeft: 0
-			}
+			margin: '0 8px 8px 8px'
+			// width: 100,
+			// paddingTop: 0,
+			// '@media (max-width: 1415px) and (min-width: 990px)': {
+			// 	display: 'flex'
+			// },
+			// '@media (max-width: 990px)': {
+			// 	marginLeft: 0
+			// }
 		},
 		bell: {
 			color: dark ? 'rgb(139, 143, 148)' : '#5f6164',
 			fontSize: '18pt',
-			margin: 8,
+			margin: '8px',
 			float: 'none',
 			'&:hover': {
 				color: dark ? '#c1d7f0' : '#24272a'
-			}
+			},
+			paddingLeft: '12px'
 		},
 		channel: {
 			width: 200,
@@ -163,18 +161,24 @@ const styles = theme => {
 		},
 		sunIcon: {
 			color: dark ? 'rgb(247, 200, 92)' : 'rgb(245, 185, 47)',
+			margin: '8px -12px 8px 8px',
 			'@media (max-width: 1415px) and (min-width: 990px)': {
-				marginTop: 15
-			}
+				margin: 8
+			},
+			fontSize: '18pt'
 		},
 		moonIcon: {
 			color: dark ? '#9cd7f7' : 'rgb(104, 195, 245)',
+			margin: '8px 8px 8px -12px',
+			paddingLeft: '0',
 			'@media (max-width: 1415px) and (min-width: 990px)': {
-				marginTop: 15
-			}
+				margin: 8
+			},
+			fontSize: '18pt'
 		},
 		logout: {
-			marginRight: -3
+			fontSize: '18pt',
+			margin: 8
 		},
 		logoutIcon: {
 			color: dark ? 'rgb(139, 143, 148)' : '#5f6164',
@@ -183,12 +187,12 @@ const styles = theme => {
 			'&:hover': {
 				color: dark ? '#c1d7f0' : '#24272a'
 			},
-			marginLeft: 5,
-			marginTop: 14,
+			margin: '8px',
 			cursor: 'pointer'
 		},
 		user: {
-			marginRight: -3
+			// margin: 8,
+			// fontSize: '18pt',
 		},
 		userIcon: {
 			color: dark ? 'rgb(139, 143, 148)' : '#5f6164',
@@ -197,8 +201,7 @@ const styles = theme => {
 			'&:hover': {
 				color: dark ? '#c1d7f0' : '#24272a'
 			},
-			marginLeft: 5,
-			marginTop: 14,
+			margin: 8,
 			cursor: 'pointer'
 		},
 		toggleIcon: {
@@ -229,10 +232,10 @@ export class HeaderView extends Component {
 	}
 
 	componentDidMount() {
-		const { channels, currentChannel } = this.props;
+		const { channels: channelArr, currentChannel } = this.props;
 		const arr = [];
 		let selectedValue = {};
-		channels.forEach(element => {
+		channelArr.forEach(element => {
 			if (element.channel_genesis_hash === currentChannel) {
 				selectedValue = {
 					value: element.channel_genesis_hash,
@@ -244,7 +247,6 @@ export class HeaderView extends Component {
 				label: element.channelname
 			});
 		});
-
 		this.setState({
 			currentChannel: currentChannel,
 			channels: arr,
@@ -473,7 +475,7 @@ export class HeaderView extends Component {
 		const {
 			isLoading,
 			selectedChannel,
-			channels,
+			channels: stateChannels,
 			notifyCount,
 			notifyDrawer,
 			adminDrawer,
@@ -481,7 +483,6 @@ export class HeaderView extends Component {
 			registerOpen,
 			notifications
 		} = this.state;
-
 		const links = [
 			{ to: '/', label: 'DASHBOARD', exact: true },
 			{ to: '/network', label: 'NETWORK' },
@@ -529,7 +530,7 @@ export class HeaderView extends Component {
 											</NavLink>
 										</li>
 									))}
-									<div className={classes.adminButton}>
+									<div>
 										<Select
 											className={classes.channel}
 											placeholder="Select Channel..."
@@ -539,7 +540,7 @@ export class HeaderView extends Component {
 											value={selectedChannel}
 											onChange={this.handleChange}
 											onFocus={this.reloadChannels.bind(this)}
-											options={channels}
+											options={stateChannels}
 										/>
 									</div>
 									{
@@ -562,25 +563,26 @@ export class HeaderView extends Component {
                   onClick={() => this.handleDrawOpen('adminDrawer')}
                 />
               </div> */}
-									<div className={`${classes.adminButton} ${classes.themeSwitch}`}>
+									<div className={classes.adminButton}>
 										<FontAwesome name="sun-o" className={classes.sunIcon} />
 										<Switch
+											className={classes.themeSwitch}
 											onChange={() => this.handleThemeChange(mode)}
 											checked={dark}
 										/>
 										<FontAwesome name="moon-o" className={classes.moonIcon} />
 									</div>
-									<div className={classNames(classes.adminButton, classes.user)}>
+									<div className={classes.adminButton}>
 										<FontAwesome
 											name="user-plus"
 											className={classes.userIcon}
 											onClick={() => this.registerOpen()}
 										/>
 									</div>
-									<div className={classNames(classes.adminButton, classes.logoutk)}>
+									<div className={classes.adminButton}>
 										<FontAwesome
 											name="sign-out"
-											className={classes.logout}
+											className={classes.logoutIcon}
 											onClick={() => this.logout()}
 										/>
 									</div>
@@ -611,7 +613,8 @@ export class HeaderView extends Component {
 							fullWidth={false}
 							maxWidth="md"
 						>
-							<Register onClose={this.registerClose} onRegister={this.onRegister} />
+							<UsersPanal onClose={this.registerClose} onRegister={this.onRegister} />
+							{/* <Register onClose={this.registerClose} onRegister={this.onRegister} /> */}
 						</Dialog>
 						<Dialog
 							open={modalOpen}
@@ -657,31 +660,35 @@ HeaderView.propTypes = {
 
 const { modeSelector } = themeSelectors;
 
-export default compose(
-	withStyles(styles),
-	connect(
-		state => ({
-			currentChannel: currentChannelSelector(state),
-			channels: channelsSelector(state),
-			mode: modeSelector(state)
-		}),
-		{
-			getBlockList: blockList,
-			getBlocksPerHour: blockPerHour,
-			getBlocksPerMin: blockPerMin,
-			getChaincodeList: chaincodeList,
-			getChangeChannel: changeChannel, // not in syncdata
-			getChannels: channels,
-			getDashStats: dashStats,
-			getMetrics: metrics,
-			getPeerList: peerList,
-			getPeerStatus: peerStatus,
-			getBlockActivity: blockActivity,
-			getTransactionByOrg: transactionByOrg,
-			getTransactionList: transactionList,
-			getTransactionPerHour: transactionPerHour,
-			getTransactionPerMin: transactionPerMin,
-			logout: authOperations.logout
-		}
-	)
+const mapStateToProps = state => {
+	return {
+		currentChannel: currentChannelSelector(state),
+		channels: channelsSelector(state),
+		mode: modeSelector(state)
+	};
+};
+
+const mapDispatchToProps = {
+	getBlockList: blockList,
+	getBlocksPerHour: blockPerHour,
+	getBlocksPerMin: blockPerMin,
+	getChaincodeList: chaincodeList,
+	getChangeChannel: changeChannel, // not in syncdata
+	getChannels: channels,
+	getDashStats: dashStats,
+	getMetrics: metrics,
+	getPeerList: peerList,
+	getPeerStatus: peerStatus,
+	getBlockActivity: blockActivity,
+	getTransactionByOrg: transactionByOrg,
+	getTransactionList: transactionList,
+	getTransactionPerHour: transactionPerHour,
+	getTransactionPerMin: transactionPerMin,
+	logout: authOperations.logout
+};
+
+const connectedComponent = connect(
+	mapStateToProps,
+	mapDispatchToProps
 )(HeaderView);
+export default withStyles(styles)(connectedComponent);

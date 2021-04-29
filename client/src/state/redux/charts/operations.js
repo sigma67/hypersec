@@ -5,8 +5,8 @@ import actions from './actions';
 import { get } from '../../../services/request';
 
 /* istanbul ignore next */
-const blockPerHour = channel => dispatch =>
-	get(`/api/blocksByHour/${channel}/1`)
+const blockPerHour = channelName => dispatch =>
+	get(`/api/blocksByHour/${channelName}/1`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
@@ -25,8 +25,8 @@ const blockPerHour = channel => dispatch =>
 		});
 
 /* istanbul ignore next */
-const blockPerMin = channel => dispatch =>
-	get(`/api/blocksByMinute/${channel}/1`)
+const blockPerMin = channelName => dispatch =>
+	get(`/api/blocksByMinute/${channelName}/1`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
@@ -45,8 +45,8 @@ const blockPerMin = channel => dispatch =>
 		});
 
 /* istanbul ignore next */
-const changeChannel = channel => dispatch =>
-	get(`/api/changeChannel/${channel}`)
+const changeChannel = channelName => dispatch =>
+	get(`/api/changeChannel/${channelName}`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
@@ -105,8 +105,8 @@ const channelList = () => dispatch =>
 		});
 
 /* istanbul ignore next */
-const dashStats = channel => dispatch =>
-	get(`/api/status/${channel}`)
+const dashStats = channelName => dispatch =>
+	get(`/api/status/${channelName}`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
@@ -125,8 +125,8 @@ const dashStats = channel => dispatch =>
 		});
 
 /* istanbul ignore next */
-const blockActivity = channel => dispatch =>
-	get(`/api/blockActivity/${channel}`)
+const blockActivity = channelName => dispatch =>
+	get(`/api/blockActivity/${channelName}`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
@@ -145,14 +145,14 @@ const blockActivity = channel => dispatch =>
 		});
 
 /* istanbul ignore next */
-const notification = notification => dispatch => {
-	const notify = JSON.parse(notification);
+const notification = notificationObj => dispatch => {
+	const notify = JSON.parse(notificationObj);
 	dispatch(actions.getNotification(notify));
 };
 
 /* istanbul ignore next */
-const peerStatus = channel => dispatch =>
-	get(`/api/peersStatus/${channel}`)
+const peerStatus = channelName => dispatch =>
+	get(`/api/peersStatus/${channelName}`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
@@ -171,8 +171,8 @@ const peerStatus = channel => dispatch =>
 		});
 
 /* istanbul ignore next */
-const transactionByOrg = channel => dispatch =>
-	get(`/api/txByOrg/${channel}`)
+const transactionByOrg = channelName => dispatch =>
+	get(`/api/txByOrg/${channelName}`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
@@ -191,8 +191,8 @@ const transactionByOrg = channel => dispatch =>
 		});
 
 /* istanbul ignore next */
-const transactionPerHour = channel => dispatch =>
-	get(`/api/txByHour/${channel}/1`)
+const transactionPerHour = channelName => dispatch =>
+	get(`/api/txByHour/${channelName}/1`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(
@@ -211,8 +211,8 @@ const transactionPerHour = channel => dispatch =>
 		});
 
 /* istanbul ignore next */
-const transactionPerMin = channel => dispatch =>
-	get(`/api/txByMinute/${channel}/1`)
+const transactionPerMin = channelName => dispatch =>
+	get(`/api/txByMinute/${channelName}/1`)
 		.then(resp => {
 			if (resp.status === 500) {
 				dispatch(

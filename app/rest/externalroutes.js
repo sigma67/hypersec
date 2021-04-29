@@ -12,7 +12,7 @@ const config = require('../explorerconfig.json')
  * @param {*} router
  * @param {*} platform
  */
-const externalroutes = async function(router, platform) {
+export async function externalroutes(router, platform) {
 	/**
 	 * Hyperledger Fabric JIRA issues
 	 */
@@ -41,5 +41,3 @@ const externalroutes = async function(router, platform) {
 	});
 
 };
-
-module.exports = externalroutes;

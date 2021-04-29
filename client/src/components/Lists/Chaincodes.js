@@ -148,7 +148,7 @@ export class Chaincodes extends Component {
 					defaultPageSize={10}
 					filterable
 					minRows={0}
-					showPagination={!(chaincodeList.length < 10)}
+					showPagination={chaincodeList.length >= 10}
 					sorted={this.state.sortOptions}
 					onSortedChange={val => {
 						this.setState({ sortOptions: val }) }}

@@ -4,12 +4,12 @@
 
 import React, { Component } from 'react';
 import Slider from 'react-slick';
-import compose from 'recompose/compose';
 import { connect } from 'react-redux';
 import { withStyles } from '@material-ui/core/styles';
 import Logo from '../../static/images/logo_small.png';
 import { chartOperations, chartSelectors } from '../../state/redux/charts';
 import { tableOperations } from '../../state/redux/tables';
+import { authOperations } from '../../state/redux/auth';
 import {
 	currentChannelType,
 	getBlockListType,
@@ -25,7 +25,8 @@ import {
 	getTransactionByOrgType,
 	getTransactionListType,
 	getTransactionPerHourType,
-	getTransactionPerMinType
+	getTransactionPerMinType,
+	getUserListType
 } from '../types';
 
 const {
@@ -38,7 +39,8 @@ const {
 	peerStatus,
 	transactionByOrg,
 	transactionPerHour,
-	transactionPerMin
+	transactionPerMin /* ,
+	userList */
 } = chartOperations;
 
 const {
@@ -48,6 +50,8 @@ const {
 	peerList,
 	transactionList
 } = tableOperations;
+
+const { userlist } = authOperations;
 
 const { currentChannelSelector } = chartSelectors;
 
@@ -115,7 +119,9 @@ export class LandingPage extends Component {
 			getTransactionList,
 			getTransactionPerHour,
 			getTransactionPerMin,
-			updateLoadStatus
+			updateLoadStatus,
+			userlist: userlistData
+			// getUserList
 		} = this.props;
 		await getChannel();
 		const { currentChannel } = this.props;
@@ -138,7 +144,8 @@ export class LandingPage extends Component {
 			getTransactionByOrg(currentChannel),
 			getTransactionList(currentChannel),
 			getTransactionPerHour(currentChannel),
-			getTransactionPerMin(currentChannel)
+			getTransactionPerMin(currentChannel),
+			userlistData()
 		]);
 		clearTimeout(promiseTimeout);
 		updateLoadStatus();
@@ -200,35 +207,42 @@ LandingPage.propTypes = {
 	getTransactionByOrg: getTransactionByOrgType.isRequired,
 	getTransactionList: getTransactionListType.isRequired,
 	getTransactionPerHour: getTransactionPerHourType.isRequired,
-	getTransactionPerMin: getTransactionPerMinType.isRequired
+	getTransactionPerMin: getTransactionPerMinType.isRequired,
+	userlist: getUserListType.isRequired
 };
 
 LandingPage.defaultProps = {
 	currentChannel: null
 };
 
-export default compose(
-	withStyles(styles),
-	connect(
-		state => ({
-			currentChannel: currentChannelSelector(state)
-		}),
-		{
-			getBlockList: blockList,
-			getBlocksPerHour: blockPerHour,
-			getBlocksPerMin: blockPerMin,
-			getChaincodeList: chaincodeList,
-			getChannelList: channelList,
-			getChannel: channel,
-			getChannels: channels,
-			getDashStats: dashStats,
-			getPeerList: peerList,
-			getPeerStatus: peerStatus,
-			getBlockActivity: blockActivity,
-			getTransactionByOrg: transactionByOrg,
-			getTransactionList: transactionList,
-			getTransactionPerHour: transactionPerHour,
-			getTransactionPerMin: transactionPerMin
-		}
-	)
+const mapStateToProps = state => {
+	return {
+		currentChannel: currentChannelSelector(state)
+	};
+};
+
+const mapDispatchToProps = {
+	getBlockList: blockList,
+	getBlocksPerHour: blockPerHour,
+	getBlocksPerMin: blockPerMin,
+	getChaincodeList: chaincodeList,
+	getChannelList: channelList,
+	getChannel: channel,
+	getChannels: channels,
+	getDashStats: dashStats,
+	getPeerList: peerList,
+	getPeerStatus: peerStatus,
+	getBlockActivity: blockActivity,
+	getTransactionByOrg: transactionByOrg,
+	getTransactionList: transactionList,
+	getTransactionPerHour: transactionPerHour,
+	getTransactionPerMin: transactionPerMin,
+	userlist: userlist
+	//getUserList: userList
+};
+
+const connectedComponent = connect(
+	mapStateToProps,
+	mapDispatchToProps
 )(LandingPage);
+export default withStyles(styles)(connectedComponent);

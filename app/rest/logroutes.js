@@ -11,7 +11,7 @@ const requtil = require('./requestutils');
  * @param {*} router
  * @param {*} platform
  */
-const logroutes = async function(router, platform) {
+export async function logroutes(router, platform) {
 	/**
 	 * Docker Logs
 	 * GET /logs
@@ -70,5 +70,3 @@ const logroutes = async function(router, platform) {
 	 * or even start/stop containers
 	 */
 };
-
-module.exports = logroutes;
