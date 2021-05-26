@@ -220,7 +220,7 @@ export class SyncServices {
 		const peer_row = {
 			mspid: peer.mspid,
 			requests: peer.endpoint,
-			server_hostname: peer.endpoint,
+			server_hostname: peer.endpoint.split(":")[0],
 			channel_genesis_hash,
 			peer_type: 'PEER'
 		};
@@ -256,7 +256,7 @@ export class SyncServices {
 		const orderer_row = {
 			mspid: orderer.org_name,
 			requests: requesturl,
-			server_hostname: requesturl,
+			server_hostname: requesturl.split(':')[0],
 			channel_genesis_hash,
 			peer_type: 'ORDERER'
 		};
