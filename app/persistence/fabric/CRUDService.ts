@@ -93,7 +93,7 @@ export class CRUDService {
 		txid: any,
 		from: any,
 		to: any,
-		orgs: string,
+		orgs: string[],
 		chaincode: string
 	) {
 		let sqlTxList = ` select t.creator_msp_id,t.txhash,t.type,t.chaincodename,t.createdt,channel.name as channelName, t.size, t.creator_id_bytes from transactions as t
@@ -101,7 +101,7 @@ export class CRUDService {
 							t.channel_genesis_hash = $3 and t.network_name = $4 and t.createdt between $5 and $6 `;
 		const values = [blockNum, txid, channel_genesis_hash, network_name, from, to];
 
-		if (orgs && orgs !== '') {
+		if (orgs && orgs.length > 0) {
 			sqlTxList += ` and t.creator_msp_id in (${orgs})`;
 		}
 
