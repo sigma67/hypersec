@@ -101,12 +101,15 @@ export class CRUDService {
 							t.channel_genesis_hash = $3 and t.network_name = $4 and t.createdt between $5 and $6 `;
 		const values = [blockNum, txid, channel_genesis_hash, network_name, from, to];
 
+		let i = 7;
 		if (orgs && orgs.length > 0) {
-			sqlTxList += ` and t.creator_msp_id in (${orgs})`;
+			values.push(orgs);
+			sqlTxList += ` and t.creator_msp_id = ANY($${i++})`;
 		}
 
 		if (chaincode && chaincode !== '') {
-			sqlTxList += ` and t.chaincodename = '${chaincode}'`;
+			values.push(chaincode);
+			sqlTxList += ` and t.chaincodename = $'${i++}'`;
 		}
 
 		const orderBy = ' order by t.createdt desc';

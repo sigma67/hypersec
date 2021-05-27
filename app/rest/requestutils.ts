@@ -94,11 +94,10 @@ export const parseOrgsArray = function(reqQuery: { [key: string]: any }) {
 		// eslint-disable-next-line spellcheck/spell-checker
 		// workaround 'Type confusion through parameter tampering', see `https //lgtm dot com/rules/1506301137371 `
 		const orgsStr = queryString.stringify(reqQuery);
-
 		if (orgsStr) {
 			const parsedReq = queryString.parse(orgsStr);
 			if (parsedReq && parsedReq.orgs) {
-				return Array.isArray(parsedReq) ? parsedReq.orgs : [parsedReq.orgs];
+				return Array.isArray(parsedReq.orgs) ? parsedReq.orgs : [parsedReq.orgs];
 			}
 
 			return [];
