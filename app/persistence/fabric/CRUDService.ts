@@ -49,7 +49,7 @@ export class CRUDService {
 	getTransactionByID(network_name: any, channel_genesis_hash: any, txhash: any) {
 		const sqlTxById = ` select t.blockid, t.txhash,t.validation_code,t.payload_proposal_hash,t.creator_msp_id,t.endorser_msp_id,t.chaincodename,t.type,t.createdt,t.read_set,
 			t.write_set,channel.name as channelName, t.size from TRANSACTIONS as t inner join channel on t.channel_genesis_hash=channel.channel_genesis_hash and t.network_name=channel.network_name
-			where = $1 and t.network_name = $2 `;
+			where t.txhash = $1 and t.network_name = $2 `;
 		return this.sql.getRowByPkOne(sqlTxById, [txhash, network_name]);
 	}
 
