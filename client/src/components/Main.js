@@ -3,7 +3,7 @@
  */
 
 //import React from 'react';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import { connect } from 'react-redux';
 import { HashRouter as Router, Route, Switch } from 'react-router-dom';
@@ -16,255 +16,243 @@ import ChannelsView from './View/ChannelsView';
 import { chartOperations, chartSelectors } from '../state/redux/charts';
 import { tableOperations, tableSelectors } from '../state/redux/tables';
 import {
-	blockListType,
-	chaincodeListType,
-	channelsType,
-	currentChannelType,
-	dashStatsType,
-	getTransactionType,
-	peerListType,
-	peerStatusType,
-	transactionType,
-	transactionByOrgType,
-	transactionListType
+  blockListType,
+  chaincodeListType,
+  channelsType,
+  currentChannelType,
+  dashStatsType,
+  getTransactionType,
+  peerListType,
+  peerStatusType,
+  transactionType,
+  transactionByOrgType,
+  transactionListType
 } from './types';
 import PageNotFound from './View/PageNotFound';
 
 import Private from './Route';
 
 const {
-	currentChannelSelector,
-	blockActivitySelector,
-	channelListSelector,
-	dashStatsSelector,
-	peerStatusSelector,
-	transactionByOrgSelector,
-	metricSelector,
-	peerMetricsSelector
+  currentChannelSelector,
+  blockActivitySelector,
+  channelListSelector,
+  dashStatsSelector,
+  peerStatusSelector,
+  transactionByOrgSelector,
+  metricSelector,
+  peerMetricsSelector
 } = chartSelectors;
 
 const {
-	blockListSelector,
-	chaincodeListSelector,
-	channelsSelector,
-	peerListSelector,
-	transactionSelector,
-	transactionListSelector,
-	blockListSearchSelector,
-	transactionListSearchSelector,
-	logsSelector,
-	issuesSelector
+  blockListSelector,
+  chaincodeListSelector,
+  channelsSelector,
+  peerListSelector,
+  transactionSelector,
+  transactionListSelector,
+  blockListSearchSelector,
+  transactionListSearchSelector,
+  logsSelector,
+  issuesSelector
 } = tableSelectors;
 
 const styles = theme => {
-	const { type } = theme.palette;
-	const dark = type === 'dark';
-	return {
-		main: {
-			color: dark ? '#ffffff' : undefined
-		}
-	};
+  const { type } = theme.palette;
+  const dark = type === 'dark';
+  return {
+    main: {
+      color: dark ? '#ffffff' : undefined
+    }
+  };
 };
 
 export const Main = props => {
-	const {
-		classes,
-		blockList,
-		blockActivity,
-		chaincodeList,
-		channels,
-		currentChannel,
-		dashStats,
-		getTransaction,
-		peerList,
-		peerStatus,
-		transaction,
-		transactionByOrg,
-		transactionList,
-		blockListSearch,
-		transactionListSearch,
-		getBlockListSearch,
-		getTransactionListSearch,
-		getMetrics,
-		metrics,
-		getLogs,
-		logs,
-		getIssues,
-		issues,
-		getPeerMetrics,
-		peerMetrics
-	} = props;
+  const {
+    classes,
+    blockList,
+    blockActivity,
+    chaincodeList,
+    channels,
+    currentChannel,
+    dashStats,
+    getTransaction,
+    peerList,
+    peerStatus,
+    transaction,
+    transactionByOrg,
+    transactionList,
+    blockListSearch,
+    transactionListSearch,
+    getBlockListSearch,
+    getTransactionListSearch,
+    getMetrics,
+    metrics,
+    getLogs,
+    logs,
+    getIssues,
+    issues,
+    getPeerMetrics,
+    peerMetrics
+  } = props;
 
-	const blocksViewProps = {
-		blockList,
-		blockListSearch,
-		getBlockListSearch,
-		transactionByOrg,
-		currentChannel,
-		getTransaction,
-		transaction
-	};
-	const chaincodeViewProps = {
-		chaincodeList
-	};
+  const blocksViewProps = {
+    blockList,
+    blockListSearch,
+    getBlockListSearch,
+    transactionByOrg,
+    currentChannel,
+    getTransaction,
+    transaction
+  };
+  const chaincodeViewProps = {
+    chaincodeList
+  };
 
-	const channelsViewProps = {
-		channels
-	};
+  const channelsViewProps = {
+    channels
+  };
 
-	const dashboardViewProps = {
-		blockList,
-		dashStats,
-		peerStatus,
-		transactionByOrg,
-		blockActivity,
-		getIssues,
-		issues
-	};
+  const dashboardViewProps = {
+    blockList,
+    dashStats,
+    peerStatus,
+    transactionByOrg,
+    blockActivity,
+    getIssues,
+    issues
+  };
 
-	const networkViewProps = {
-		peerList,
-		getLogs,
-		logs,
-		getPeerMetrics,
-		peerMetrics
-	};
+  const networkViewProps = {
+    peerList,
+    getLogs,
+    logs,
+    getPeerMetrics,
+    peerMetrics
+  };
 
-	const transactionsViewProps = {
-		currentChannel,
-		transaction,
-		transactionList,
-		getTransaction,
-		transactionByOrg,
-		transactionListSearch,
-		getTransactionListSearch,
-		getMetrics,
-		metrics,
-	};
+  const transactionsViewProps = {
+    currentChannel,
+    transaction,
+    transactionList,
+    getTransaction,
+    transactionByOrg,
+    transactionListSearch,
+    getTransactionListSearch,
+    getMetrics,
+    metrics
+  };
 
-	const [transactionId, setTransactionId] = useState('');
+  useEffect(() => {
+    let windowUrl = window.location.search;
+    let queryParams = new URLSearchParams(windowUrl);
+    if (queryParams.get('tab')) {
+      const { history } = props;
+      let routePath = '/' + queryParams.get('tab');
+      history.replace(routePath);
+    }
+  }, [props]);
 
-	useEffect(() => {
-		let windowUrl = window.location.search;
-		let queryParams = new URLSearchParams(windowUrl);
-		if (queryParams.get('tab')) {
-			setTransactionId(queryParams.get('transId'));
-			const { history } = props;
-			let routePath = '/' + queryParams.get('tab');
-			history.replace(routePath);
-		}
-	}, []);
-
-	function removeTransactionId() {
-		let windowUrl = window.location.search;
-		let queryParams = new URLSearchParams(windowUrl);
-		if (queryParams.get('tab')) {
-			queryParams.delete('tab');
-			queryParams.delete('transId');
-		}
-		setTransactionId('');
-	}
-
-	return (
-		<Router>
-			<div className={classes.main}>
-				<Switch>
-					<Private
-						exact
-						path="/"
-						render={routeprops => (
-							<DashboardView {...{ ...dashboardViewProps, ...routeprops }} />
-						)}
-					/>
-					<Private
-						exact
-						path="/blocks"
-						render={routeprops => (
-							<BlocksView {...{ ...blocksViewProps, ...routeprops }} />
-						)}
-					/>
-					<Private
-						exact
-						path="/chaincodes"
-						render={routeprops => (
-							<ChaincodeView {...{ ...chaincodeViewProps, ...routeprops }} />
-						)}
-					/>
-					<Private
-						exact
-						path="/channels"
-						render={routeprops => (
-							<ChannelsView {...{ ...channelsViewProps, ...routeprops }} />
-						)}
-					/>
-					<Private
-						exact
-						path="/network"
-						render={routeprops => (
-							<NetworkView {...{ ...networkViewProps, ...routeprops }} />
-						)}
-					/>
-					<Private
-						exact
-						path="/transactions"
-						render={routeprops => (
-							<TransactionsView
-								{...{ ...transactionsViewProps, ...routeprops }}
-								transactionId={transactionId}
-								removeTransactionId={removeTransactionId}
-							/>
-						)}
-					/>
-					<Route exact render={routeprops => <PageNotFound {...routeprops} />} />
-				</Switch>
-			</div>
-		</Router>
-	);
+  return (
+    <Router>
+      <div className={classes.main}>
+        <Switch>
+          <Private
+            exact
+            path="/"
+            render={routeprops => (
+              <DashboardView {...{ ...dashboardViewProps, ...routeprops }} />
+            )}
+          />
+          <Private
+            exact
+            path="/blocks"
+            render={routeprops => (
+              <BlocksView {...{ ...blocksViewProps, ...routeprops }} />
+            )}
+          />
+          <Private
+            exact
+            path="/chaincodes"
+            render={routeprops => (
+              <ChaincodeView {...{ ...chaincodeViewProps, ...routeprops }} />
+            )}
+          />
+          <Private
+            exact
+            path="/channels"
+            render={routeprops => (
+              <ChannelsView {...{ ...channelsViewProps, ...routeprops }} />
+            )}
+          />
+          <Private
+            exact
+            path="/network"
+            render={routeprops => (
+              <NetworkView {...{ ...networkViewProps, ...routeprops }} />
+            )}
+          />
+          <Private
+            exact
+            path="/transactions"
+            render={routeprops => (
+              <TransactionsView
+                {...{ ...transactionsViewProps, ...routeprops }}
+              />
+            )}
+          />
+          <Route
+            exact
+            render={routeprops => <PageNotFound {...routeprops} />}
+          />
+        </Switch>
+      </div>
+    </Router>
+  );
 };
 
 Main.propTypes = {
-	blockList: blockListType.isRequired,
-	chaincodeList: chaincodeListType.isRequired,
-	channels: channelsType.isRequired,
-	currentChannel: currentChannelType.isRequired,
-	dashStats: dashStatsType.isRequired,
-	getTransaction: getTransactionType.isRequired,
-	peerList: peerListType.isRequired,
-	peerStatus: peerStatusType.isRequired,
-	transaction: transactionType.isRequired,
-	transactionByOrg: transactionByOrgType.isRequired,
-	transactionList: transactionListType.isRequired
+  blockList: blockListType.isRequired,
+  chaincodeList: chaincodeListType.isRequired,
+  channels: channelsType.isRequired,
+  currentChannel: currentChannelType.isRequired,
+  dashStats: dashStatsType.isRequired,
+  getTransaction: getTransactionType.isRequired,
+  peerList: peerListType.isRequired,
+  peerStatus: peerStatusType.isRequired,
+  transaction: transactionType.isRequired,
+  transactionByOrg: transactionByOrgType.isRequired,
+  transactionList: transactionListType.isRequired
 };
 
 const connectedComponent = connect(
-	state => ({
-		blockList: blockListSelector(state),
-		chaincodeList: chaincodeListSelector(state),
-		channelList: channelListSelector(state),
-		channels: channelsSelector(state),
-		currentChannel: currentChannelSelector(state),
-		dashStats: dashStatsSelector(state),
-		peerList: peerListSelector(state),
-		peerStatus: peerStatusSelector(state),
-		transaction: transactionSelector(state),
-		transactionByOrg: transactionByOrgSelector(state),
-		transactionList: transactionListSelector(state),
-		blockListSearch: blockListSearchSelector(state),
-		transactionListSearch: transactionListSearchSelector(state),
-		blockActivity: blockActivitySelector(state),
-		metrics: metricSelector(state),
-		logs: logsSelector(state),
-		issues: issuesSelector(state),
-		peerMetrics: peerMetricsSelector(state)
-	}),
-	{
-		getTransaction: tableOperations.transaction,
-		getBlockListSearch: tableOperations.blockListSearch,
-		getTransactionListSearch: tableOperations.transactionListSearch,
-		getMetrics: chartOperations.metrics,
-		getLogs: tableOperations.logs,
-		getIssues: tableOperations.issues,
-		getPeerMetrics: chartOperations.peerMetrics
-	}
+  state => ({
+    blockList: blockListSelector(state),
+    chaincodeList: chaincodeListSelector(state),
+    channelList: channelListSelector(state),
+    channels: channelsSelector(state),
+    currentChannel: currentChannelSelector(state),
+    dashStats: dashStatsSelector(state),
+    peerList: peerListSelector(state),
+    peerStatus: peerStatusSelector(state),
+    transaction: transactionSelector(state),
+    transactionByOrg: transactionByOrgSelector(state),
+    transactionList: transactionListSelector(state),
+    blockListSearch: blockListSearchSelector(state),
+    transactionListSearch: transactionListSearchSelector(state),
+    blockActivity: blockActivitySelector(state),
+    metrics: metricSelector(state),
+    logs: logsSelector(state),
+    issues: issuesSelector(state),
+    peerMetrics: peerMetricsSelector(state)
+  }),
+  {
+    getTransaction: tableOperations.transaction,
+    getBlockListSearch: tableOperations.blockListSearch,
+    getTransactionListSearch: tableOperations.transactionListSearch,
+    getMetrics: chartOperations.metrics,
+    getLogs: tableOperations.logs,
+    getIssues: tableOperations.issues,
+    getPeerMetrics: chartOperations.peerMetrics
+  }
 )(Main);
 export default withStyles(styles)(connectedComponent);
